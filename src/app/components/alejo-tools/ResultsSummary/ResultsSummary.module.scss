@@ -1,0 +1,79 @@
+@use "../../../styles/variables" as *;
+
+.resultsWrapper {
+  border: 3px solid $color-border;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 20px 16px;
+  background-color: transparent;
+}
+
+.title {
+  margin: 0 0 12px;
+  color: $color-white;
+  font-size: 1.9rem;
+  font-weight: 600;
+}
+
+.resultInnerCard {
+  border: 3px solid $color-border;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.resultTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.score {
+  margin: 0;
+  color: $color-yellow;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.probabilityText {
+  margin: 0;
+  color: $color-gray;
+  font-size: 1.35rem;
+  line-height: 1.35;
+}
+
+.disclaimer {
+  margin: 12px 0 0;
+  color: $color-gray;
+  font-size: 1.2rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 767px) {
+  .resultsWrapper {
+    margin: 16px;
+    padding: 12px;
+  }
+
+  .title {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+  }
+
+  .resultInnerCard {
+    padding: 12px;
+  }
+
+  .score {
+    font-size: 1.7rem;
+  }
+
+  .probabilityText {
+    font-size: 0.9rem;
+  }
+
+  .disclaimer {
+    font-size: 0.75rem;
+  }
+}
