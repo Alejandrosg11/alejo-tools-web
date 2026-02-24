@@ -1,0 +1,76 @@
+@use "../../styles/variables" as *;
+
+// Menú móvil oculto por defecto
+.mobile-menu {
+    display: none;
+    position: absolute;
+    top: 65px;
+    left: 0;
+    width: 100%;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-direction: column;
+    padding: 16px 0;
+    z-index: 10;
+    &.open {
+        display: flex;
+    }
+}
+
+.navbar {
+    height: 80px;
+    width: 100vw;
+    background-color: $color-bg-secondary;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    padding: 0;
+    margin: 0 auto;
+}
+
+
+// Mobile (hasta 767px)
+@media (max-width: 767px) {
+    .navbar-container-desktop {
+        display: none;
+    }
+    .navbar-container-mobile {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+        padding: 0 20px;
+    }
+    .navbar {
+        height: 65px;
+    }
+}
+
+
+@media (min-width: 768px) {
+    .navbar-container-mobile {
+        display: none;
+    }
+}
+
+
+// Tablet (768px a 1023px)
+// Desktop (1024px a 1439px)
+// Desktop grande (> 1440px)
+@media (min-width: 768px) {
+    .navbar-container-desktop {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+        padding: 0 60px;
+        width: 100%;
+    }
+}
+
+@media (min-width: 1440px) {
+    .navbar-container-desktop {
+        width: 1440px;
+    }
+}
