@@ -1,0 +1,18 @@
+@use "../../styles/variables" as *;
+
+.yellowButton {
+  background-color: $color-yellow;
+  color: $color-bg-main;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.yellowButton:disabled {
+  opacity: 1;
+  cursor: default;
+}
