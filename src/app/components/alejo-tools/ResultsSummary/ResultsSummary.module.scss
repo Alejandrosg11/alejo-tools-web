@@ -6,26 +6,21 @@
   padding: 14px;
   margin: 20px 16px;
   background-color: transparent;
-}
-
-.revealContent {
   animation: revealResults 320ms ease-out both;
 }
 
 @keyframes revealResults {
   from {
     opacity: 0;
-    transform: translateY(-16px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .revealContent {
+  .resultsWrapper {
     animation: none;
   }
 }
@@ -41,6 +36,7 @@
   border: 3px solid $color-border;
   border-radius: 12px;
   padding: 14px;
+  background-color: transparent;
 }
 
 .resultTopRow {

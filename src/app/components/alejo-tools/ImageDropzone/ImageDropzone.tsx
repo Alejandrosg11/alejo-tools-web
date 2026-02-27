@@ -219,11 +219,11 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				}
 
 				if (errorCode?.startsWith("600")) {
-					setErrorMessage("Tu navegador o red bloqueó la verificación anti-bot. Intenta en incógnito o desactiva bloqueadores para este sitio.");
+					setErrorMessage("No pudimos completar la verificación de seguridad. Recarga la página e intenta de nuevo.");
 					return;
 				}
 
-				setErrorMessage("No se pudo validar el challenge anti-bot. Intenta de nuevo.");
+				setErrorMessage("No se pudo verificar la solicitud. Intenta nuevamente.");
 			},
 		});
 
@@ -345,31 +345,27 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	};
 
 	const getSafeErrorMessage = (status: number, backendErrorCode?: string): string => {
-		if (status === 400) {
-			if (backendErrorCode === "TOKEN_MISSING") {
-				return "El backend exige token anti-bot. Activa Turnstile (bypass=false) o desactiva validación anti-bot en backend local.";
-			}
+		switch (status) {
+			case 400:
+				if (backendErrorCode === "TOKEN_MISSING") {
+					return "No pudimos validar la solicitud en este momento. Intenta nuevamente.";
+				}
 
-			return "No se pudo procesar la imagen. Verifica formato y tamaño.";
+				return "No se pudo procesar la imagen. Verifica formato y tamaño.";
+			case 413:
+				return `La imagen supera el límite permitido por el servidor. Usa un archivo de hasta ${MAX_UPLOAD_MB}MB.`;
+			case 429:
+				return "Demasiadas solicitudes. Espera unos segundos antes de reintentar.";
+			case 401:
+			case 403:
+				return "No se pudo validar la verificación anti-bot. Intenta de nuevo.";
+			default:
+				if (status >= 500) {
+					return "El servicio no está disponible por ahora. Intenta más tarde.";
+				}
+
+				return "No se pudo analizar la imagen.";
 		}
-
-		if (status === 413) {
-			return `La imagen supera el límite permitido por el servidor. Usa un archivo de hasta ${MAX_UPLOAD_MB}MB.`;
-		}
-
-		if (status === 429) {
-			return "Demasiadas solicitudes. Espera unos segundos antes de reintentar.";
-		}
-
-		if (status === 401 || status === 403) {
-			return "No se pudo validar la verificación anti-bot. Intenta de nuevo.";
-		}
-
-		if (status >= 500) {
-			return "El servicio no está disponible por ahora. Intenta más tarde.";
-		}
-
-		return "No se pudo analizar la imagen.";
 	};
 
 	return (
@@ -434,13 +430,11 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 							Completa esta verificación para analizar la imagen.
 						</p>
 						<div ref={turnstileContainerRef} className={styles.turnstileWidget} />
-						<button
-							type="button"
-							onClick={closeVerificationModal}
-							className={styles.turnstileModalClose}
-						>
-							Cancelar
-						</button>
+						<YellowButton
+							Clickable={true}
+							text="Cancelar"
+							Action={closeVerificationModal}
+						/>
 					</div>
 				</div>
 			)}
