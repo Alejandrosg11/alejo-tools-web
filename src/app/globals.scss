@@ -7,7 +7,7 @@ body {
     $color-bg-main;
   color: $color-white;
   position: relative;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: var(--font-geist-sans), 'Inter', 'Segoe UI', Arial, sans-serif;
   margin: 0;
 }
 
