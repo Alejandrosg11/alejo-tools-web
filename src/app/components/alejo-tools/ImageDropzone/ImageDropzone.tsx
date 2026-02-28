@@ -4,6 +4,7 @@ import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Script from "next/script";
 import YellowButton from "../../YellowButton/YellowButton";
+import TurnstileVerificationModal from "../../TurnstileVerificationModal/TurnstileVerificationModal";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import styles from "./ImageDropzone.module.scss";
 import { DetectorApiResponse, DetectorResult } from "../types";
@@ -420,23 +421,12 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 			{isAnalyzing && <p className={styles.analyzingText}>Analizando imagen, espera un momento...</p>}
 
-			{isBotProtectionEnabled && isVerificationModalOpen && (
-				<div className={styles.turnstileModalOverlay} role="dialog" aria-modal="true" aria-labelledby="turnstile-modal-title">
-					<div className={styles.turnstileModal}>
-						<h3 id="turnstile-modal-title" className={styles.turnstileModalTitle}>
-							Verifica que no eres un bot
-						</h3>
-						<p className={styles.turnstileModalText}>
-							Completa esta verificación para analizar la imagen.
-						</p>
-						<div ref={turnstileContainerRef} className={styles.turnstileWidget} />
-						<YellowButton
-							Clickable={true}
-							text="Cancelar"
-							Action={closeVerificationModal}
-						/>
-					</div>
-				</div>
+			{isBotProtectionEnabled && (
+				<TurnstileVerificationModal
+					open={isVerificationModalOpen}
+					onCancel={closeVerificationModal}
+					turnstileContainerRef={turnstileContainerRef}
+				/>
 			)}
 
 			<p className={styles.supportedFormats}>

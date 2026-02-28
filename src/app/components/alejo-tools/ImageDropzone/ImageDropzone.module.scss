@@ -92,64 +92,6 @@
   gap: 8px;
 }
 
-.turnstileWidget {
-  min-height: 65px;
-}
-
-.turnstileModalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 999;
-}
-
-.turnstileModal {
-  width: 100%;
-  max-width: 420px;
-  border: 2px solid $color-border;
-  border-radius: 12px;
-  background: $color-bg-secondary;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.turnstileModalTitle {
-  margin: 0;
-  font-size: 1.1rem;
-  color: $color-white;
-  text-align: center;
-}
-
-.turnstileModalText {
-  margin: 0;
-  color: $color-gray;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.turnstileModalClose {
-  border: 1px solid $color-border;
-  border-radius: 8px;
-  background: transparent;
-  color: $color-white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 8px 14px;
-  cursor: pointer;
-}
-
-.turnstileModalClose:focus-visible {
-  outline: 2px solid $color-yellow;
-  outline-offset: 2px;
-}
-
 .maxSize {
   color: $color-yellow;
 }
@@ -214,15 +156,4 @@
     font-size: 0.75rem;
   }
 
-  .turnstileModal {
-    max-width: 360px;
-  }
-
-  .turnstileModalTitle {
-    font-size: 1rem;
-  }
-
-  .turnstileModalText {
-    font-size: 0.85rem;
-  }
 }
