@@ -35,10 +35,20 @@ export async function POST(request: NextRequest) {
 		);
 	}
 
+	let sessionToken = "";
+	try {
+		sessionToken = createBetaSessionToken();
+	} catch {
+		return NextResponse.json(
+			{ message: "Ocurrió un problema temporal. Inténtalo de nuevo en un momento." },
+			{ status: 503 },
+		);
+	}
+
 	const response = NextResponse.json({ ok: true });
 	response.cookies.set({
 		name: BETA_SESSION_COOKIE_NAME,
-		value: createBetaSessionToken(),
+		value: sessionToken,
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
 		sameSite: "lax",
