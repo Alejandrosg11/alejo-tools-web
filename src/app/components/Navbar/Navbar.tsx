@@ -14,7 +14,7 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles["navbar-container-desktop"]}>
                 <div>
-                    <Image src="/isotipoAlejoParaCanva.png" alt="Logo" width={220} height={70} priority />
+                    <Image src="/Alejo-Logo3.svg" alt="Logo" width={220} height={70} priority />
                 </div>
                 <div className={styles["nav-links"]}>
                     <Link href="/alejo-tools">Alejo Tools</Link>
@@ -23,7 +23,7 @@ export default function Navbar() {
             </div>
             <div className={styles["navbar-container-mobile"]}>
                 <div>
-                    <Image src="/isotipoAlejoParaCanva.png" alt="Logo" width={160} height={50} priority />
+                    <Image src="/Alejo-Logo3.svg" alt="Logo" width={160} height={50} priority />
                 </div>
                 <button className={styles["menu-toggle"]} onClick={toggleMenu}>
                     <FaBars size={24} />

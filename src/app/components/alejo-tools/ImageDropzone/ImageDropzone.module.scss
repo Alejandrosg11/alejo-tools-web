@@ -65,8 +65,10 @@
 
 .dropText {
   color: $color-gray;
-  font-size: 2rem;
-  line-height: 1.2;
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.008em;
   margin: 0;
 }
 
@@ -74,7 +76,10 @@
   margin: 14px 0 0;
   text-align: center;
   color: $color-gray;
-  font-size: 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.003em;
 }
 
 .previewHint {
@@ -82,6 +87,9 @@
   text-align: center;
   color: $color-gray;
   font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0.003em;
 }
 
 .botProtectionWrapper {
@@ -94,6 +102,7 @@
 
 .maxSize {
   color: $color-yellow;
+  font-weight: 700;
 }
 
 .errorText {
@@ -102,6 +111,7 @@
   color: $color-yellow;
   font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1.35;
 }
 
 .analyzingText {
@@ -109,6 +119,8 @@
   text-align: center;
   color: $color-gray;
   font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 @media (max-width: 767px) {
@@ -137,11 +149,11 @@
   }
 
   .dropText {
-    font-size: 1.15rem;
+    font-size: 1rem;
   }
 
   .supportedFormats {
-    font-size: .8rem;
+    font-size: .72rem;
   }
 
   .previewHint {

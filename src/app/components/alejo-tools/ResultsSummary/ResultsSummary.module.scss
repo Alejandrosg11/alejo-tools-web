@@ -28,8 +28,10 @@
 .title {
   margin: 0 0 12px;
   color: $color-white;
-  font-size: 1.9rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
 }
 
 .resultInnerCard {
@@ -50,22 +52,28 @@
 .score {
   margin: 0;
   color: $color-yellow;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .probabilityText {
   margin: 0;
   color: $color-gray;
-  font-size: 1.35rem;
-  line-height: 1.35;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.004em;
 }
 
 .disclaimer {
   margin: 12px 0 0;
   color: $color-gray;
-  font-size: 1.2rem;
-  line-height: 1.35;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.003em;
 }
 
 @media (max-width: 767px) {
@@ -75,7 +83,7 @@
   }
 
   .title {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     margin-bottom: 10px;
   }
 
@@ -88,7 +96,7 @@
   }
 
   .probabilityText {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
 
   .disclaimer {

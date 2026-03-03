@@ -3,11 +3,11 @@
 body {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 50% 0%, $color-bg-gradient-center 0%, $color-bg-gradient-edge 100%),
+    radial-gradient(ellipse at 50% 0%, $color-bg-gradient-center 0%, $color-bg-gradient-edge 10%),
     $color-bg-main;
   color: $color-white;
   position: relative;
-  font-family: var(--font-geist-sans), 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: var(--font-plus-jakarta-sans), 'Inter', 'Segoe UI', Arial, sans-serif;
   margin: 0;
 }
 
