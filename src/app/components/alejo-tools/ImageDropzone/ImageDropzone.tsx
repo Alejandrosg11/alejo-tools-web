@@ -58,6 +58,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [isVerificationModalOpen, setIsVerificationModalOpen] = useState<boolean>(false);
+	const [isVerificationLoading, setIsVerificationLoading] = useState<boolean>(false);
 	const isLocalDevHost =
 		isDev &&
 		typeof window !== "undefined" &&
@@ -178,6 +179,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			}
 
 			setPendingFile(null);
+			setIsVerificationLoading(false);
 			setIsVerificationModalOpen(false);
 
 			setIsAnalyzing(false);
@@ -185,7 +187,12 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	}, [isBotProtectionEnabled, onResult, resetTurnstileWidgetSafely]);
 
 	useEffect(() => {
-		if (!isBotProtectionEnabled || !isTurnstileScriptLoaded || !isVerificationModalOpen) {
+		if (
+			!isBotProtectionEnabled ||
+			!isTurnstileScriptLoaded ||
+			!isVerificationModalOpen ||
+			isVerificationLoading
+		) {
 			return;
 		}
 
@@ -202,12 +209,21 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			sitekey: TURNSTILE_SITE_KEY,
 			callback: (token: string) => {
 				setErrorMessage("");
-				setIsVerificationModalOpen(false);
+				removeTurnstileWidgetSafely();
+
+				if (turnstileContainerRef.current) {
+					turnstileContainerRef.current.innerHTML = "";
+				}
 
 				if (!pendingFile) {
+					setIsVerificationLoading(false);
+					setIsVerificationModalOpen(false);
 					setErrorMessage("No se encontró una imagen para analizar. Selecciona una de nuevo.");
 					return;
 				}
+
+				setIsVerificationLoading(true);
+				setIsVerificationModalOpen(true);
 
 				void runDetection(pendingFile, token);
 			},
@@ -220,10 +236,12 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				}
 
 				if (errorCode?.startsWith("600")) {
+					setIsVerificationLoading(false);
 					setErrorMessage("No pudimos completar la verificación de seguridad. Recarga la página e intenta de nuevo.");
 					return;
 				}
 
+				setIsVerificationLoading(false);
 				setErrorMessage("No se pudo verificar la solicitud. Intenta nuevamente.");
 			},
 		});
@@ -231,7 +249,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		return () => {
 			removeTurnstileWidgetSafely();
 		};
-	}, [isBotProtectionEnabled, isTurnstileScriptLoaded, isVerificationModalOpen, pendingFile, removeTurnstileWidgetSafely, runDetection]);
+	}, [isBotProtectionEnabled, isTurnstileScriptLoaded, isVerificationModalOpen, isVerificationLoading, pendingFile, removeTurnstileWidgetSafely, runDetection]);
 
 	useEffect(() => {
 		if (cooldownSeconds <= 0) {
@@ -327,6 +345,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 		if (isBotProtectionEnabled) {
 			setPendingFile(selectedFile);
+			setIsVerificationLoading(false);
 			setIsVerificationModalOpen(true);
 
 			if (turnstileWidgetIdRef.current) {
@@ -340,7 +359,12 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	};
 
 	const closeVerificationModal = () => {
+		if (isVerificationLoading) {
+			return;
+		}
+
 		setIsVerificationModalOpen(false);
+		setIsVerificationLoading(false);
 		setPendingFile(null);
 		removeTurnstileWidgetSafely();
 	};
@@ -419,11 +443,14 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				</div>
 			)}
 
-			{isAnalyzing && <p className={styles.analyzingText}>Analizando imagen, espera un momento...</p>}
+			{isAnalyzing && !isVerificationLoading && (
+				<p className={styles.analyzingText}>Analizando imagen, espera un momento...</p>
+			)}
 
 			{isBotProtectionEnabled && (
 				<TurnstileVerificationModal
 					open={isVerificationModalOpen}
+					mode={isVerificationLoading ? "loading" : "verify"}
 					onCancel={closeVerificationModal}
 					turnstileContainerRef={turnstileContainerRef}
 				/>

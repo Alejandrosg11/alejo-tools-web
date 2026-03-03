@@ -42,6 +42,25 @@
   min-height: 65px;
 }
 
+.loadingSpinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 4px solid $color-gray;
+  border-top-color: $color-yellow;
+  animation: turnstileLoadingSpinnerRotate 0.9s linear infinite;
+}
+
+@keyframes turnstileLoadingSpinnerRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 767px) {
   .turnstileModal {
     max-width: 360px;
