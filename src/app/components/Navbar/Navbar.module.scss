@@ -12,8 +12,31 @@
     flex-direction: column;
     padding: 16px 0;
     z-index: 10;
+
+    a,
+    a:visited,
+    a:hover,
+    a:active {
+        color: $color-yellow-nav;
+        text-decoration: none;
+    }
+
     &.open {
         display: flex;
+    }
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+
+    a,
+    a:visited,
+    a:hover,
+    a:active {
+        color: $color-yellow-nav;
+        text-decoration: none;
     }
 }
 
@@ -72,5 +95,10 @@
 @media (min-width: 1440px) {
     .navbar-container-desktop {
         width: 1440px;
+    }
+    .navbar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 }
