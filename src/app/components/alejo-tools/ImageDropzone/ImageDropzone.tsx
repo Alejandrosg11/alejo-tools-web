@@ -129,8 +129,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				formData.append(TURNSTILE_TOKEN_FIELD, verificationToken);
 			}
 
-			const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-			const response = await fetch(`${baseUrl}/detect/ai`, {
+			const response = await fetch("/api/detect/ai", {
 				method: "POST",
 				body: formData,
 			});
@@ -171,7 +170,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 					"Resultado probabilístico. Úsalo como señal, no como sentencia.",
 			});
 		} catch {
-			setErrorMessage("No se pudo conectar con el servicio de análisis. Intenta de nuevo.");
+			setErrorMessage("No pudimos validar tu acceso en este momento. Revisa tu conexión e inténtalo en unos segundos.");
 			onResult(null);
 		} finally {
 			if (isBotProtectionEnabled) {
