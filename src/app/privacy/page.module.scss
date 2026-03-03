@@ -1,0 +1,86 @@
+@use "../styles/variables" as *;
+
+.pageShell {
+	min-height: 100vh;
+}
+
+.pageContent {
+	max-width: 920px;
+	margin: 0 auto;
+	padding: 20px 20px 56px;
+	position: relative;
+	z-index: 1;
+}
+
+.header,
+.section {
+	background: rgba($color-bg-secondary, 0.85);
+	border: 1px solid $color-border;
+	border-radius: 14px;
+	padding: 20px;
+	margin-bottom: 14px;
+}
+
+.header {
+	h1 {
+		margin: 0 0 10px;
+		font-size: clamp(1.5rem, 2.3vw, 2rem);
+		line-height: 1.2;
+	}
+
+	p {
+		margin: 0;
+		color: $color-gray;
+	}
+}
+
+.updatedAt {
+	margin-top: 12px !important;
+	font-size: 0.9rem;
+	color: rgba($color-gray, 0.9) !important;
+}
+
+.section {
+	h2 {
+		margin: 0 0 10px;
+		font-size: 1.1rem;
+		color: $color-yellow;
+	}
+
+	p {
+		margin: 0;
+		line-height: 1.65;
+		color: $color-white;
+	}
+
+	p + p {
+		margin-top: 10px;
+	}
+
+	ul {
+		margin: 0;
+		padding-left: 18px;
+		display: grid;
+		gap: 8px;
+	}
+
+	li {
+		line-height: 1.6;
+		color: $color-white;
+	}
+
+	strong {
+		color: $color-yellow;
+	}
+}
+
+@media (min-width: 768px) {
+	.pageContent {
+		padding: 24px 40px 72px;
+	}
+
+	.header,
+	.section {
+		padding: 24px;
+	}
+}

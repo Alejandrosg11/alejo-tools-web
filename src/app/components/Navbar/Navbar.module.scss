@@ -40,6 +40,11 @@
     }
 }
 
+.activeLink {
+    text-decoration: underline !important;
+    text-underline-offset: 10px;
+}
+
 .navbar {
     height: 80px;
     width: 100vw;
