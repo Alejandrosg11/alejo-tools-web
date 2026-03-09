@@ -1,0 +1,119 @@
+@use "../../../styles/variables" as *;
+
+.affiliateCard {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px;
+	border: 2px solid $color-border;
+	border-radius: 14px;
+	background: linear-gradient(180deg, #15141a 0%, #0f0f12 100%);
+    width: 318px;
+}
+
+.mobileTapLink {
+	display: none;
+}
+
+.badge {
+	margin: 0;
+	font-size: 0.68rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: $color-yellow;
+}
+
+.title {
+	margin: 0;
+	color: $color-white;
+	font-size: 0.95rem;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.description {
+	margin: 0;
+	color: $color-gray;
+	font-size: 0.75rem;
+	line-height: 1.45;
+}
+
+.imageWrap {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 16 / 10;
+	overflow: hidden;
+	border-radius: 10px;
+	border: 1px solid #35333d;
+	background-color: #121218;
+}
+
+.image {
+	object-fit: contain;
+}
+
+.imagePlaceholder {
+	display: grid;
+	place-items: center;
+	height: 100%;
+	color: $color-yellow;
+	font-size: 1.2rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+}
+
+@media (max-width: 849px) {
+	.affiliateCard {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 120px;
+		grid-template-areas:
+			"badge image"
+			"title image"
+			"description image";
+		column-gap: 10px;
+		row-gap: 6px;
+		align-items: center;
+		margin-left: 16px;
+		margin-right: 16px;
+        width: auto;
+		cursor: pointer;
+	}
+
+	.mobileTapLink {
+		display: block;
+		position: absolute;
+		inset: 0;
+		z-index: 3;
+		border-radius: 14px;
+	}
+
+	.badge {
+		grid-area: badge;
+	}
+
+	.title {
+		grid-area: title;
+	}
+
+	.description {
+		grid-area: description;
+	}
+
+	.imageWrap {
+		grid-area: image;
+		width: 120px;
+		height: 76px;
+		aspect-ratio: auto;
+	}
+
+	.image {
+		object-fit: cover;
+	}
+
+	/* YellowButton renders as a direct button child in this card */
+	.affiliateCard > button {
+		display: none;
+	}
+}

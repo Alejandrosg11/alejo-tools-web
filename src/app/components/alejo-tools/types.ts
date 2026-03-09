@@ -15,3 +15,16 @@ export type DetectorApiResponse = {
 	};
 	disclaimer?: string;
 };
+
+export type AffiliateAssetType = "product" | "storewide";
+
+export type AffiliateAssetResponse = {
+	id: string;
+	brand: "ugee";
+	type: AffiliateAssetType;
+	title: string;
+	description: string;
+	imageUrl: string;
+	trackingUrl: string;
+	ctaText: string;
+};

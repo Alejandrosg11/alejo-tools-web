@@ -6,6 +6,7 @@ import HeroSection from '../components/alejo-tools/HeroSection/HeroSection';
 import ImageDropzone from '../components/alejo-tools/ImageDropzone/ImageDropzone';
 import ResultsSummary from '../components/alejo-tools/ResultsSummary/ResultsSummary';
 import SupportCard from '../components/alejo-tools/SupportCard/SupportCard';
+import AffiliateSpotlight from '../components/alejo-tools/AffiliateSpotlight/AffiliateSpotlight';
 import { DetectorResult } from '../components/alejo-tools/types';
 import styles from './page.module.scss';
 
@@ -23,6 +24,7 @@ export default function AlejoToolsPage() {
                 </section>
                 <aside className={styles.supportColumn}>
                     <SupportCard />
+                    <AffiliateSpotlight />
                 </aside>
             </main>
         </div>
