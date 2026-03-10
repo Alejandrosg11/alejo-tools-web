@@ -32,9 +32,17 @@
 	}
 
 	.supportColumn {
-		padding-right: 16px;
+		position: sticky;
+		top: 98px;
+		align-self: start;
+		padding-right: 0;
 		display: flex;
 		justify-content: flex-start;
-		align-items: flex-end;
+		align-items: center;
+	}
+
+	.supportColumn > * {
+		width: 100%;
+		max-width: 320px;
 	}
 }

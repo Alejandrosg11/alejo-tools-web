@@ -59,8 +59,8 @@
 
 @media (min-width: 850px) {
 	.supportCard {
-		position: sticky;
-		top: 98px;
+		position: relative;
+		left: auto;
 		right: auto;
 		bottom: auto;
 		width: 100%;

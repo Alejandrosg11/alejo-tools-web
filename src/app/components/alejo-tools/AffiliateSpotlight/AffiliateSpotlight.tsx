@@ -13,7 +13,7 @@ const FALLBACK_CARD: AffiliateAssetResponse = {
 	title: "Oferta UGEE",
 	description: "Descubre productos de dibujo digital en UGEE.",
 	imageUrl: "https://shop.ugee.com/cdn/shop/files/UT3main02.jpg?v=1769074750&width=1946",
-	trackingUrl: "https://shop.ugee.com/cdn/shop/files/UT3main02.jpg?v=1769074750&width=1946",
+	trackingUrl: "https://shopugeecom.sjv.io/090VJM",
 	ctaText: "Ver tienda",
 };
 
