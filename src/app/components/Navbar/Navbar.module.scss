@@ -1,17 +1,25 @@
 @use "../../styles/variables" as *;
 
-// Menú móvil oculto por defecto
 .mobile-menu {
-    display: none;
+    display: flex;
     position: absolute;
-    top: 65px;
-    left: 0;
-    width: 100%;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    top: calc(100% + 8px);
+    left: 12px;
+    width: calc(100% - 24px);
+    background: rgba(18, 18, 18, 0.92);
+    border: 1px solid rgba(243, 198, 35, 0.18);
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
     flex-direction: column;
-    padding: 16px 0;
-    z-index: 10;
+    gap: 12px;
+    padding: 16px 14px;
+    z-index: 20;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 0.24s ease, transform 0.24s ease, visibility 0.24s ease;
 
     a,
     a:visited,
@@ -19,10 +27,44 @@
     a:active {
         color: $color-yellow-nav;
         text-decoration: none;
+        display: block;
+        padding: 4px 2px;
+        line-height: 1.35;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        will-change: opacity, transform;
+    }
+
+    a:nth-of-type(1) {
+        transition-delay: 0ms;
+    }
+
+    a:nth-of-type(2) {
+        transition-delay: 60ms;
+    }
+
+    a:nth-of-type(3) {
+        transition-delay: 120ms;
+    }
+
+    a:nth-of-type(4) {
+        transition-delay: 180ms;
     }
 
     &.open {
-        display: flex;
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+        pointer-events: auto;
+
+        a,
+        a:visited,
+        a:hover,
+        a:active {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 }
 
@@ -47,13 +89,38 @@
 
 .navbar {
     height: 80px;
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
     background-color: $color-bg-secondary;
     display: flex;
     justify-content: space-between;
     margin: 0;
     padding: 0;
     margin: 0 auto;
+}
+
+.menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.menu-toggle:focus-visible {
+    outline: 2px solid $color-yellow-nav;
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+
+.navbar,
+.navbar-container-mobile,
+.mobile-menu {
+    box-sizing: border-box;
 }
 
 
@@ -63,7 +130,9 @@
         display: none;
     }
     .navbar-container-mobile {
+        position: relative;
         width: 100%;
+        max-width: 100%;
         display: flex;
         justify-content: space-between;
         align-items: center;
