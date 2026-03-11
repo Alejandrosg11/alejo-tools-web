@@ -24,6 +24,11 @@ const TURNSTILE_SITE_KEY =
 		? TURNSTILE_DEV_TEST_SITE_KEY
 		: TURNSTILE_CONFIGURED_SITE_KEY;
 const TURNSTILE_TOKEN_FIELD = (process.env.NEXT_PUBLIC_BOT_TOKEN_FIELD || "turnstileToken").trim();
+const BOT_SESSION_HEADER = (
+	process.env.NEXT_PUBLIC_BOT_SESSION_HEADER || "x-bot-session-token"
+).trim();
+const BOT_SESSION_STORAGE_KEY = "alejo_bot_session_token";
+const MAX_TURNSTILE_AUTO_RETRIES = 2;
 
 declare global {
 	interface Window {
@@ -59,6 +64,8 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [isVerificationModalOpen, setIsVerificationModalOpen] = useState<boolean>(false);
 	const [isVerificationLoading, setIsVerificationLoading] = useState<boolean>(false);
+	const [turnstileRetryCount, setTurnstileRetryCount] = useState<number>(0);
+	const [botSessionToken, setBotSessionToken] = useState<string>("");
 	const isLocalDevHost =
 		isDev &&
 		typeof window !== "undefined" &&
@@ -68,6 +75,31 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 	const isBotProtectionEnabled = Boolean(TURNSTILE_SITE_KEY) && !shouldBypassTurnstileInLocalDev;
 	const canUploadImage = !isAnalyzing;
+
+	const saveBotSessionToken = useCallback((token: string) => {
+		setBotSessionToken(token);
+
+		if (typeof window !== "undefined") {
+			window.localStorage.setItem(BOT_SESSION_STORAGE_KEY, token);
+		}
+	}, []);
+
+	const clearBotSessionToken = useCallback(() => {
+		setBotSessionToken("");
+
+		if (typeof window !== "undefined") {
+			window.localStorage.removeItem(BOT_SESSION_STORAGE_KEY);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
+
+		const persistedSessionToken = window.localStorage.getItem(BOT_SESSION_STORAGE_KEY) || "";
+		setBotSessionToken(persistedSessionToken);
+	}, []);
 
 	const resetTurnstileWidgetSafely = useCallback(() => {
 		if (!window.turnstile || !turnstileWidgetIdRef.current) {
@@ -103,6 +135,16 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		}
 	}, []);
 
+	const retryTurnstileVerification = useCallback(() => {
+		if (turnstileRetryCount >= MAX_TURNSTILE_AUTO_RETRIES) {
+			return;
+		}
+
+		setTimeout(() => {
+			setTurnstileRetryCount((currentCount) => currentCount + 1);
+		}, 300);
+	}, [turnstileRetryCount]);
+
 	useEffect(() => {
 		return () => {
 			if (previewUrl) {
@@ -117,7 +159,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			setErrorMessage("");
 			onResult(null);
 
-			if (isBotProtectionEnabled && !verificationToken) {
+			if (isBotProtectionEnabled && !verificationToken && !botSessionToken) {
 				return;
 			}
 
@@ -129,11 +171,22 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				formData.append(TURNSTILE_TOKEN_FIELD, verificationToken);
 			}
 
+			const requestHeaders: HeadersInit = {};
+			if (isBotProtectionEnabled && botSessionToken) {
+				requestHeaders[BOT_SESSION_HEADER] = botSessionToken;
+			}
+
 			const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 			const response = await fetch(`${baseUrl}/detect/ai`, {
 				method: "POST",
+				headers: requestHeaders,
 				body: formData,
 			});
+
+			const refreshedSessionToken = response.headers.get(BOT_SESSION_HEADER);
+			if (refreshedSessionToken) {
+				saveBotSessionToken(refreshedSessionToken);
+			}
 
 			if (!response.ok) {
 				let backendErrorCode = "";
@@ -155,6 +208,20 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				if (response.status === 429) {
 					const retryAfter = Number(response.headers.get("retry-after") || 30);
 					setCooldownSeconds(Number.isNaN(retryAfter) ? 30 : retryAfter);
+				}
+
+				if (
+					(backendErrorCode === "TOKEN_MISSING" || backendErrorCode === "TOKEN_INVALID") &&
+					botSessionToken &&
+					!verificationToken
+				) {
+					clearBotSessionToken();
+					setPendingFile(selectedFile);
+					setIsVerificationLoading(false);
+					setTurnstileRetryCount(0);
+					setIsVerificationModalOpen(true);
+					setErrorMessage("Necesitamos validar seguridad una vez más para continuar.");
+					return;
 				}
 
 				setErrorMessage(getSafeErrorMessage(response.status, backendErrorCode));
@@ -179,12 +246,13 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			}
 
 			setPendingFile(null);
+			setTurnstileRetryCount(0);
 			setIsVerificationLoading(false);
 			setIsVerificationModalOpen(false);
 
 			setIsAnalyzing(false);
 		}
-	}, [isBotProtectionEnabled, onResult, resetTurnstileWidgetSafely]);
+	}, [botSessionToken, clearBotSessionToken, isBotProtectionEnabled, onResult, resetTurnstileWidgetSafely, saveBotSessionToken]);
 
 	useEffect(() => {
 		if (
@@ -209,6 +277,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			sitekey: TURNSTILE_SITE_KEY,
 			callback: (token: string) => {
 				setErrorMessage("");
+				setTurnstileRetryCount(0);
 				removeTurnstileWidgetSafely();
 
 				if (turnstileContainerRef.current) {
@@ -228,28 +297,38 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				void runDetection(pendingFile, token);
 			},
 			"expired-callback": () => {
-				setErrorMessage("Verifica nuevamente que no eres un bot para continuar.");
+				if (turnstileRetryCount < MAX_TURNSTILE_AUTO_RETRIES) {
+					retryTurnstileVerification();
+					return;
+				}
+
+				setErrorMessage("No pudimos validar automáticamente la verificación. Intenta una vez más.");
 			},
 			"error-callback": (errorCode?: string) => {
 				if (isDev) {
 					console.warn("Turnstile error-callback", errorCode);
 				}
 
+				if (turnstileRetryCount < MAX_TURNSTILE_AUTO_RETRIES) {
+					retryTurnstileVerification();
+					return;
+				}
+
 				if (errorCode?.startsWith("600")) {
 					setIsVerificationLoading(false);
-					setErrorMessage("No pudimos completar la verificación de seguridad. Recarga la página e intenta de nuevo.");
+					setErrorMessage("No pudimos completar la verificación de seguridad. Intenta de nuevo en unos segundos.");
 					return;
 				}
 
 				setIsVerificationLoading(false);
-				setErrorMessage("No se pudo verificar la solicitud. Intenta nuevamente.");
+				setErrorMessage("No se pudo validar automáticamente la verificación. Intenta una vez más.");
 			},
 		});
 
 		return () => {
 			removeTurnstileWidgetSafely();
 		};
-	}, [isBotProtectionEnabled, isTurnstileScriptLoaded, isVerificationModalOpen, isVerificationLoading, pendingFile, removeTurnstileWidgetSafely, runDetection]);
+	}, [isBotProtectionEnabled, isTurnstileScriptLoaded, isVerificationModalOpen, isVerificationLoading, pendingFile, removeTurnstileWidgetSafely, retryTurnstileVerification, runDetection, turnstileRetryCount]);
 
 	useEffect(() => {
 		if (cooldownSeconds <= 0) {
@@ -345,6 +424,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 		if (isBotProtectionEnabled) {
 			setPendingFile(selectedFile);
+			setTurnstileRetryCount(0);
 			setIsVerificationLoading(false);
 			setIsVerificationModalOpen(true);
 
@@ -366,6 +446,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		setIsVerificationModalOpen(false);
 		setIsVerificationLoading(false);
 		setPendingFile(null);
+		setTurnstileRetryCount(0);
 		removeTurnstileWidgetSafely();
 	};
 
