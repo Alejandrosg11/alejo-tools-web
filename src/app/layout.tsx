@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.scss";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${plusJakartaSans.variable} ${geistMono.variable}`}>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
