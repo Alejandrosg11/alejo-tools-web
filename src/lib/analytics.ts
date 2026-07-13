@@ -1,6 +1,24 @@
 export const ANALYTICS_CONSENT_STORAGE_KEY = "alejo_analytics_consent";
 export const ANALYTICS_CONSENT_CHANGE_EVENT = "alejo:analytics-consent-change";
 
+export type AnalyticsConsent = "granted" | "denied";
+
+export function setAnalyticsConsent(consent: AnalyticsConsent): boolean {
+  if (typeof window === "undefined") return false;
+
+  let wasStored = false;
+
+  try {
+    window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, consent);
+    wasStored = true;
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+
+  window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGE_EVENT));
+  return wasStored;
+}
+
 export type AnalyticsPlacement = "sidebar" | "post_result";
 export type ResultBand = "low" | "uncertain" | "high";
 export type AnalysisErrorCategory =
