@@ -37,12 +37,24 @@ declare global {
 
 const measurementId = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
 
+export function hasGrantedAnalyticsConsent(): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return (
+      window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "granted"
+    );
+  } catch {
+    return false;
+  }
+}
+
 const canTrack = (): boolean =>
   process.env.NODE_ENV === "production" &&
   Boolean(measurementId) &&
   typeof window !== "undefined" &&
   typeof window.gtag === "function" &&
-  window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "granted";
+  hasGrantedAnalyticsConsent();
 
 const normalizePublicId = (value: string): string => value.trim().slice(0, 100);
 

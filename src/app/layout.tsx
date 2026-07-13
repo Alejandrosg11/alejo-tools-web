@@ -26,7 +26,7 @@ export default function RootLayout({
         <Script id="google-analytics-consent-default" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
+            function gtag(){window.dataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('consent', 'default', {
               analytics_storage: 'denied',

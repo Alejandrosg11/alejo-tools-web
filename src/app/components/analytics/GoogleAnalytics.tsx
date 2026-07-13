@@ -5,18 +5,18 @@ import Script from "next/script";
 import {
   ANALYTICS_CONSENT_CHANGE_EVENT,
   ANALYTICS_CONSENT_STORAGE_KEY,
+  hasGrantedAnalyticsConsent,
 } from "@/lib/analytics";
 
 const measurementId = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
 const isProduction = process.env.NODE_ENV === "production";
 
-const hasGrantedConsent = (): boolean =>
-  window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "granted";
-
 const subscribeToConsent = (onStoreChange: () => void): (() => void) => {
+  if (!isProduction || !measurementId) return () => {};
+
   const syncConsent = () => {
     window.gtag?.("consent", "update", {
-      analytics_storage: hasGrantedConsent() ? "granted" : "denied",
+      analytics_storage: hasGrantedAnalyticsConsent() ? "granted" : "denied",
       ad_storage: "denied",
       ad_user_data: "denied",
       ad_personalization: "denied",
@@ -42,7 +42,7 @@ const subscribeToConsent = (onStoreChange: () => void): (() => void) => {
 const getConsentSnapshot = (): boolean =>
   isProduction &&
   Boolean(measurementId) &&
-  hasGrantedConsent();
+  hasGrantedAnalyticsConsent();
 
 const getServerConsentSnapshot = (): boolean => false;
 
