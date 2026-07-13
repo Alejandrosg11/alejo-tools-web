@@ -21,7 +21,7 @@ export type AlejoAnalyticsEvent =
     }
   | { name: "kofi_click"; placement: "post_result" };
 
-type GtagCommand = "config" | "consent" | "event";
+type GtagCommand = "config" | "consent" | "event" | "js";
 type GtagParameters = Record<string, string | number | boolean | null>;
 
 declare global {
@@ -29,7 +29,7 @@ declare global {
     dataLayer?: unknown[];
     gtag?: (
       command: GtagCommand,
-      targetOrAction: string,
+      targetOrAction: string | Date,
       parameters?: GtagParameters,
     ) => void;
   }

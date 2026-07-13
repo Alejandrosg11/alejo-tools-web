@@ -34,6 +34,7 @@ export default function RootLayout({
               ad_user_data: 'denied',
               ad_personalization: 'denied'
             });
+            gtag('js', new Date());
           `}
         </Script>
         {children}

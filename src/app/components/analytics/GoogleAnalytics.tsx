@@ -10,20 +10,39 @@ import {
 const measurementId = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
 const isProduction = process.env.NODE_ENV === "production";
 
+const hasGrantedConsent = (): boolean =>
+  window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "granted";
+
 const subscribeToConsent = (onStoreChange: () => void): (() => void) => {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, onStoreChange);
+  const syncConsent = () => {
+    window.gtag?.("consent", "update", {
+      analytics_storage: hasGrantedConsent() ? "granted" : "denied",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+    });
+    onStoreChange();
+  };
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === ANALYTICS_CONSENT_STORAGE_KEY) {
+      syncConsent();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, syncConsent);
 
   return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, onStoreChange);
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, syncConsent);
   };
 };
 
 const getConsentSnapshot = (): boolean =>
   isProduction &&
   Boolean(measurementId) &&
-  window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "granted";
+  hasGrantedConsent();
 
 const getServerConsentSnapshot = (): boolean => false;
 
