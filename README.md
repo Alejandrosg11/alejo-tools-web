@@ -1,5 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Analytics configuration
+
+Copy `.env.example` to `.env.local` and configure `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
+Google Analytics is disabled outside production and its tag is not loaded until the
+visitor grants analytics consent. Event payloads must go through the typed helper in
+`src/lib/analytics.ts`; do not call `gtag` directly from feature components.
+
 ## Getting Started
 
 First, run the development server:
