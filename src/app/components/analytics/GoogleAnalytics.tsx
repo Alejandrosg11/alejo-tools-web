@@ -3,9 +3,8 @@
 import { useSyncExternalStore } from "react";
 import Script from "next/script";
 import {
-  ANALYTICS_CONSENT_CHANGE_EVENT,
-  ANALYTICS_CONSENT_STORAGE_KEY,
   hasGrantedAnalyticsConsent,
+  subscribeToAnalyticsConsent,
 } from "@/lib/analytics";
 
 const measurementId = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
@@ -24,19 +23,7 @@ const subscribeToConsent = (onStoreChange: () => void): (() => void) => {
     onStoreChange();
   };
 
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === ANALYTICS_CONSENT_STORAGE_KEY) {
-      syncConsent();
-    }
-  };
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, syncConsent);
-
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, syncConsent);
-  };
+  return subscribeToAnalyticsConsent(syncConsent);
 };
 
 const getConsentSnapshot = (): boolean =>

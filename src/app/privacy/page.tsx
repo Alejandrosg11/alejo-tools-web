@@ -1,7 +1,8 @@
 import Navbar from "@/app/components/Navbar/Navbar";
+import AnalyticsPreferenceControl from "@/app/components/analytics/AnalyticsPreferenceControl";
 import styles from "./page.module.scss";
 
-const LAST_UPDATED = "2 de marzo de 2026";
+const LAST_UPDATED = "13 de julio de 2026";
 
 export default function PrivacyPage() {
 	return (
@@ -132,9 +133,10 @@ export default function PrivacyPage() {
 						datos, en términos de la LFPDPPP y su normativa relacionada.
 					</p>
 					<p>
-						Para ejercer estos derechos, contáctanos por los canales oficiales del
-						proyecto e indica claramente tu solicitud y medios de contacto para
-						darte seguimiento.
+						Para ejercer estos derechos, escribe a{" "}
+						<a href="mailto:contacto@alejodraws.com">contacto@alejodraws.com</a>{" "}
+						e indica claramente tu solicitud y un medio de contacto para darle
+						seguimiento.
 					</p>
 				</section>
 
@@ -153,7 +155,29 @@ export default function PrivacyPage() {
 				</section>
 
 				<section className={styles.section}>
-					<h2>11. Cambios en esta política</h2>
+					<h2>11. Analítica opcional y preferencias</h2>
+					<p>
+						Con tu autorización, usamos Google Analytics 4 y Vercel Speed Insights
+						para medir visitas, rendimiento y eventos generales de uso. No enviamos
+						a estos servicios la imagen, el nombre del archivo, su contenido visual,
+						tokens de seguridad ni el porcentaje exacto del resultado.
+					</p>
+					<p>
+						Al pulsar Aceptar, tu elección se guarda localmente en el navegador.
+						Cerrar el aviso con la X no activa la analítica ni afecta el
+						funcionamiento de Alejo Tools. Si no aceptas, el aviso puede aparecer
+						de nuevo al recargar la página.
+					</p>
+					<p>
+						Puedes revocar tu autorización en cualquier momento con el siguiente
+						control. La revocación desactiva futuras mediciones en este navegador,
+						sin efectos retroactivos sobre datos recopilados previamente.
+					</p>
+					<AnalyticsPreferenceControl />
+				</section>
+
+				<section className={styles.section}>
+					<h2>12. Cambios en esta política</h2>
 					<p>
 						Podemos actualizar esta política cuando cambie el servicio, la ley o
 						nuestros procesos de seguridad. Publicaremos siempre la fecha de última

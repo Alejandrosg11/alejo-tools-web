@@ -1,0 +1,154 @@
+@use "../../styles/variables" as *;
+
+.banner {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: grid;
+  gap: 18px;
+  width: calc(100% - 40px);
+  max-width: 430px;
+  padding: 20px;
+  color: $color-white;
+  background: rgba(35, 34, 40, 0.98);
+  border: 1px solid rgba(252, 190, 0, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+}
+
+.copy {
+  display: grid;
+  gap: 6px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  color: $color-yellow;
+  font-weight: 700;
+}
+
+.description,
+.error {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.description {
+  color: $color-gray;
+}
+
+.description a {
+  color: $color-yellow;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.error {
+  color: #ffb4ab;
+}
+
+.actions {
+  display: grid;
+}
+
+.primaryButton,
+.closeButton {
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.primaryButton,
+.closeButton {
+  min-height: 42px;
+}
+
+.primaryButton {
+  width: 100%;
+  padding: 10px 16px;
+  color: $color-bg-main;
+  background: $color-yellow;
+  border: 1px solid $color-yellow;
+}
+
+.closeButton {
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  color: $color-white;
+  background: transparent;
+  border: 0;
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.closeButton span {
+  display: block;
+  transform: translateY(-2px);
+}
+
+.primaryButton:focus-visible,
+.closeButton:focus-visible,
+.description a:focus-visible {
+  outline: 2px solid $color-yellow-nav;
+  outline-offset: 3px;
+}
+
+@media (max-width: 680px) {
+  .banner {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    gap: 14px;
+    padding: 18px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .banner {
+    animation: consent-bounce-in 650ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+}
+
+@keyframes consent-bounce-in {
+  0% {
+    opacity: 0;
+    transform: translateY(120%) scale(0.94);
+  }
+
+  58% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1.01);
+  }
+
+  76% {
+    transform: translateY(6px) scale(1);
+  }
+
+  90% {
+    transform: translateY(-2px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -72,6 +72,11 @@
 	strong {
 		color: $color-yellow;
 	}
+
+	a {
+		color: $color-yellow;
+		text-underline-offset: 3px;
+	}
 }
 
 @media (min-width: 768px) {
