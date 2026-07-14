@@ -20,7 +20,9 @@ export function subscribeToAnalyticsConsent(
   if (typeof window === "undefined") return () => undefined;
 
   const handleStorage = (event: StorageEvent) => {
-    if (event.key === ANALYTICS_CONSENT_STORAGE_KEY) onConsentChange();
+    if (event.key === ANALYTICS_CONSENT_STORAGE_KEY || event.key === null) {
+      onConsentChange();
+    }
   };
 
   window.addEventListener("storage", handleStorage);
