@@ -1,0 +1,50 @@
+@use "../../styles/variables" as *;
+
+.control {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba($color-bg-main, 0.55);
+  border: 1px solid $color-border;
+  border-radius: 10px;
+}
+
+.status,
+.error {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.status strong {
+  color: $color-yellow;
+}
+
+.actionButton {
+  min-height: 42px;
+  padding: 10px 16px;
+  color: $color-white;
+  background: transparent;
+  border: 1px solid $color-yellow;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  color: $color-bg-main;
+  background: $color-yellow;
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid $color-yellow-nav;
+  outline-offset: 3px;
+}
+
+.error {
+  color: #ffb4ab;
+  font-size: 0.86rem;
+}

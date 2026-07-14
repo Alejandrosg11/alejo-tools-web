@@ -3,6 +3,33 @@ export const ANALYTICS_CONSENT_CHANGE_EVENT = "alejo:analytics-consent-change";
 
 export type AnalyticsConsent = "granted" | "denied";
 
+export function getAnalyticsConsent(): AnalyticsConsent | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const consent = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
+    return consent === "granted" || consent === "denied" ? consent : null;
+  } catch {
+    return null;
+  }
+}
+
+export function subscribeToAnalyticsConsent(
+  onConsentChange: () => void,
+): () => void {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === ANALYTICS_CONSENT_STORAGE_KEY) onConsentChange();
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, onConsentChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, onConsentChange);
+  };
+}
+
 export function setAnalyticsConsent(consent: AnalyticsConsent): boolean {
   if (typeof window === "undefined") return false;
 
@@ -56,15 +83,7 @@ declare global {
 const measurementId = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
 
 export function hasGrantedAnalyticsConsent(): boolean {
-  if (typeof window === "undefined") return false;
-
-  try {
-    return (
-      window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "granted"
-    );
-  } catch {
-    return false;
-  }
+  return getAnalyticsConsent() === "granted";
 }
 
 const canTrack = (): boolean =>

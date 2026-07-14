@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import GoogleAnalytics from "./components/analytics/GoogleAnalytics";
+import AnalyticsConsentManager from "./components/analytics/AnalyticsConsentManager";
 import "./globals.scss";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -38,8 +37,7 @@ export default function RootLayout({
           `}
         </Script>
         {children}
-        <GoogleAnalytics />
-        <SpeedInsights />
+        <AnalyticsConsentManager />
       </body>
     </html>
   );
