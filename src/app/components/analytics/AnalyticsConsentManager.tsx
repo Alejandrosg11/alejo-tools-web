@@ -73,7 +73,7 @@ export default function AnalyticsConsentManager() {
               <Link href="/privacy">Consulta la política de privacidad</Link>.
             </p>
             {storageError && (
-              <p className={styles.error} role="status">
+              <p className={styles.error} role="alert">
                 Tu navegador bloqueó el almacenamiento de esta preferencia. La
                 analítica seguirá desactivada.
               </p>

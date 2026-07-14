@@ -17,6 +17,8 @@ export function getAnalyticsConsent(): AnalyticsConsent | null {
 export function subscribeToAnalyticsConsent(
   onConsentChange: () => void,
 ): () => void {
+  if (typeof window === "undefined") return () => undefined;
+
   const handleStorage = (event: StorageEvent) => {
     if (event.key === ANALYTICS_CONSENT_STORAGE_KEY) onConsentChange();
   };
