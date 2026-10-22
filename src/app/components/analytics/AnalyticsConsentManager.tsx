@@ -10,6 +10,7 @@ import {
   type AnalyticsConsent,
 } from "@/lib/analytics";
 import GoogleAnalytics from "./GoogleAnalytics";
+import { isQaEnvironment } from "@/lib/environment";
 import styles from "./AnalyticsConsentManager.module.scss";
 
 const getServerConsent = (): null => null;
@@ -46,7 +47,7 @@ export default function AnalyticsConsentManager() {
   return (
     <>
       <GoogleAnalytics />
-      {consent === "granted" && <SpeedInsights />}
+      {!isQaEnvironment && consent === "granted" && <SpeedInsights />}
 
       {shouldShowBanner && (
         <section
