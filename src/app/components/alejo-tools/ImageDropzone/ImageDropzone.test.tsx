@@ -104,7 +104,7 @@ describe("session reuse and verification recovery", () => {
       .mockResolvedValueOnce(success());
     const { user, input, file, onResult } = uploadSetup("expired-session");
     await user.upload(input, file);
-    await screen.findByRole("dialog");
+    await screen.findByRole("dialog", { name: "Verifica que no eres un bot" });
     expect(localStorage.getItem(storageKey)).toBeNull();
     expect(screen.getByText("Necesitamos validar seguridad una vez más para continuar.")).toBeTruthy();
     await act(async () => completeChallenge("renewed-challenge"));
@@ -121,7 +121,7 @@ describe("session reuse and verification recovery", () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: "TOKEN_MISSING" }), { status: 400 }));
     const { user, input, file } = uploadSetup(recovering ? "expired-session" : undefined);
     await user.upload(input, file);
-    await screen.findByRole("dialog");
+    await screen.findByRole("dialog", { name: "Verifica que no eres un bot" });
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByRole("img", { name: "Imagen seleccionada" })).toBeTruthy();
@@ -135,7 +135,7 @@ describe("session reuse and verification recovery", () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: "TOKEN_INVALID" }), { status: 403 }));
     const { user, input, file } = uploadSetup("expired-session");
     await user.upload(input, file);
-    await screen.findByRole("dialog");
+    await screen.findByRole("dialog", { name: "Verifica que no eres un bot" });
     await act(async () => completeChallenge("rejected-challenge"));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -163,5 +163,40 @@ describe("session reuse and verification recovery", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(renderWidget).not.toHaveBeenCalled();
     expect(localStorage.getItem(storageKey)).toBe("valid-session");
+  });
+
+  it.each(["success", "server-error", "network-error"])("shows the same loading modal on a second upload until %s", async (outcome) => {
+    let resolveRequest!: (response: Response) => void;
+    let rejectRequest!: (error: Error) => void;
+    const pendingResponse = new Promise<Response>((resolve, reject) => {
+      resolveRequest = resolve;
+      rejectRequest = reject;
+    });
+    fetchMock.mockResolvedValueOnce(success()).mockReturnValueOnce(pendingResponse);
+    const { user, input, file, onResult } = uploadSetup("valid-session");
+    await user.upload(input, file);
+    await waitFor(() => expect(onResult).toHaveBeenCalledWith(expect.objectContaining(result)));
+
+    await user.upload(input, new File(["second-image"], "second.png", { type: "image/png" }));
+    const loading = screen.getByRole("dialog", { name: "Procesando solicitud" });
+    expect(loading.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByText("Estamos analizando tu imagen. Esto puede tardar unos segundos.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cancelar" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Cambiar imagen seleccionada" }).hasAttribute("disabled")).toBe(true);
+    expect(renderWidget).not.toHaveBeenCalled();
+
+    await act(async () => {
+      if (outcome === "network-error") rejectRequest(new TypeError("simulated network failure"));
+      else resolveRequest(outcome === "success" ? success() : new Response("{}", { status: 503 }));
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByRole("button", { name: "Cambiar imagen seleccionada" }).hasAttribute("disabled")).toBe(false);
+    if (outcome === "success") {
+      expect(onResult.mock.calls.filter(([value]) => value !== null)).toHaveLength(2);
+    } else {
+      expect(screen.getByText(outcome === "server-error"
+        ? "El servicio no está disponible por ahora. Intenta más tarde."
+        : "No se pudo conectar con el servicio de análisis. Intenta de nuevo.")).toBeTruthy();
+    }
   });
 });

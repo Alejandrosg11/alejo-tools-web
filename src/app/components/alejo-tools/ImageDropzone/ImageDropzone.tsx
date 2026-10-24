@@ -532,14 +532,10 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				</div>
 			)}
 
-			{isAnalyzing && !isVerificationLoading && (
-				<p className={styles.analyzingText}>Analizando imagen, espera un momento...</p>
-			)}
-
-			{isBotProtectionEnabled && (
+			{(isBotProtectionEnabled || isAnalyzing) && (
 				<TurnstileVerificationModal
-					open={isVerificationModalOpen}
-					mode={isVerificationLoading ? "loading" : "verify"}
+					open={isVerificationModalOpen || isAnalyzing}
+					mode={isVerificationLoading || isAnalyzing ? "loading" : "verify"}
 					onCancel={closeVerificationModal}
 					turnstileContainerRef={turnstileContainerRef}
 				/>
