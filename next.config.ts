@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+const isQa = ["qa", "staging"].includes(
+  (process.env.NEXT_PUBLIC_APP_ENV || "").trim().toLowerCase(),
+);
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://challenges.cloudflare.com`,
@@ -23,6 +26,7 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
+          ...(isQa ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] : []),
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

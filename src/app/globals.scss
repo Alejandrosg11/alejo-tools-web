@@ -1,5 +1,16 @@
 @use "./styles/variables" as *;
 
+.qa-environment-notice {
+  position: relative;
+  z-index: 1;
+  padding: 0.65rem 1rem;
+  background: #facc15;
+  color: #171717;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 body {
   min-height: 100vh;
   background:

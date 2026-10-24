@@ -2,13 +2,14 @@
 
 import { useSyncExternalStore } from "react";
 import Script from "next/script";
+import { isQaEnvironment } from "@/lib/environment";
 import {
   hasGrantedAnalyticsConsent,
   subscribeToAnalyticsConsent,
 } from "@/lib/analytics";
 
 const measurementId = (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === "production" && !isQaEnvironment;
 
 const subscribeToConsent = (onStoreChange: () => void): (() => void) => {
   if (!isProduction || !measurementId) return () => {};

@@ -154,6 +154,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	}, [previewUrl]);
 
 	const runDetection = useCallback(async (selectedFile: File, verificationToken?: string) => {
+		let needsVerification = false;
 		try {
 			setIsAnalyzing(true);
 			setErrorMessage("");
@@ -216,6 +217,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 					!verificationToken
 				) {
 					clearBotSessionToken();
+					needsVerification = true;
 					setPendingFile(selectedFile);
 					setIsVerificationLoading(false);
 					setTurnstileRetryCount(0);
@@ -245,10 +247,14 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				resetTurnstileWidgetSafely();
 			}
 
-			setPendingFile(null);
 			setTurnstileRetryCount(0);
 			setIsVerificationLoading(false);
-			setIsVerificationModalOpen(false);
+			// A rejected session hands the same file to Turnstile. Do not undo
+			// that transition when this request finishes.
+			if (!needsVerification) {
+				setPendingFile(null);
+				setIsVerificationModalOpen(false);
+			}
 
 			setIsAnalyzing(false);
 		}
@@ -393,6 +399,8 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 	const onImageChange = (event: ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = event.target.files?.[0];
+		// Allow selecting the same file again after cancelling or a failed attempt.
+		event.target.value = "";
 
 		if (!selectedFile) {
 			setErrorMessage("");
@@ -422,7 +430,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		const objectUrl = URL.createObjectURL(selectedFile);
 		setPreviewUrl(objectUrl);
 
-		if (isBotProtectionEnabled) {
+		if (isBotProtectionEnabled && !botSessionToken) {
 			setPendingFile(selectedFile);
 			setTurnstileRetryCount(0);
 			setIsVerificationLoading(false);
@@ -524,14 +532,10 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				</div>
 			)}
 
-			{isAnalyzing && !isVerificationLoading && (
-				<p className={styles.analyzingText}>Analizando imagen, espera un momento...</p>
-			)}
-
-			{isBotProtectionEnabled && (
+			{(isBotProtectionEnabled || isAnalyzing) && (
 				<TurnstileVerificationModal
-					open={isVerificationModalOpen}
-					mode={isVerificationLoading ? "loading" : "verify"}
+					open={isVerificationModalOpen || isAnalyzing}
+					mode={isVerificationLoading || isAnalyzing ? "loading" : "verify"}
 					onCancel={closeVerificationModal}
 					turnstileContainerRef={turnstileContainerRef}
 				/>

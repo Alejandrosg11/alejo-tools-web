@@ -7,7 +7,18 @@ Google Analytics is disabled outside production and its tag is not loaded until 
 visitor grants analytics consent. Event payloads must go through the typed helper in
 `src/lib/analytics.ts`; do not call `gtag` directly from feature components.
 
-## Getting Started
+## Component tests
+
+Run `npm test` for the ImageDropzone session and verification regression tests
+(Vitest, jsdom and React Testing Library). The tests simulate Turnstile and fetch;
+they do not call Cloudflare or Sightengine or consume provider quota. They cover
+session reuse, renewal with the same image, cancellation and unrelated errors.
+Use Node.js 20.19+ (or a compatible newer LTS) for the test tooling.
+
+Before deploying, also run `npx tsc --noEmit`, `npm run lint` and `npm run build`.
+The real CAPTCHA and analysis flow still require a manual check in protected QA.
+
+## Local development
 
 First, run the development server:
 

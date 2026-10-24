@@ -1,3 +1,5 @@
+import { isQaEnvironment } from "./environment";
+
 export const ANALYTICS_CONSENT_STORAGE_KEY = "alejo_analytics_consent";
 export const ANALYTICS_CONSENT_CHANGE_EVENT = "alejo:analytics-consent-change";
 
@@ -91,6 +93,7 @@ export function hasGrantedAnalyticsConsent(): boolean {
 }
 
 const canTrack = (): boolean =>
+  !isQaEnvironment &&
   process.env.NODE_ENV === "production" &&
   Boolean(measurementId) &&
   typeof window !== "undefined" &&
