@@ -9,7 +9,7 @@ visitor grants analytics consent. Event payloads must go through the typed helpe
 
 ## Component tests
 
-Run `npm test` for the ImageDropzone session and verification regression tests
+Run `npm test` for the ImageDropzone session/verification and affiliate fallback regression tests
 (Vitest, jsdom and React Testing Library). The tests simulate Turnstile and fetch;
 they do not call Cloudflare or Sightengine or consume provider quota. They cover
 session reuse, renewal with the same image, cancellation and unrelated errors.
@@ -17,6 +17,18 @@ Use Node.js 20.19+ (or a compatible newer LTS) for the test tooling.
 
 Before deploying, also run `npx tsc --noEmit`, `npm run lint` and `npm run build`.
 The real CAPTCHA and analysis flow still require a manual check in protected QA.
+
+## Dependency maintenance
+
+Next.js and `eslint-config-next` are pinned together at `16.4.6`; React and React
+DOM remain at `19.2.3`. Run both `npm audit --package-lock-only` and
+`npm audit --package-lock-only --omit=dev` to distinguish the full dependency tree
+from the tree excluding development packages. Keep the lockfile with updates and
+check tests, types, lint, build, localhost and QA before publishing.
+
+Next.js generates the managed instructions in `AGENTS.md` during development;
+the version-specific guides they reference are bundled under
+`node_modules/next/dist/docs/`.
 
 ## Local development
 
