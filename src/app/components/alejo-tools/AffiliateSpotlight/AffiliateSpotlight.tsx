@@ -23,10 +23,6 @@ export default function AffiliateSpotlight() {
 	const [displayImageUrl, setDisplayImageUrl] = useState<string>(FALLBACK_CARD.imageUrl);
 
 	useEffect(() => {
-		setDisplayImageUrl(asset.imageUrl);
-	}, [asset.imageUrl]);
-
-	useEffect(() => {
 		const controller = new AbortController();
 
 		const loadAffiliateAsset = async () => {
@@ -48,6 +44,7 @@ export default function AffiliateSpotlight() {
 				}
 
 				setAsset(data);
+				setDisplayImageUrl(data.imageUrl);
 			} catch {
 				// Keep fallback card when affiliate API is temporarily unavailable.
 			} finally {

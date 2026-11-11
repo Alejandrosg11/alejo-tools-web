@@ -52,6 +52,28 @@ type ImageDropzoneProps = {
 	onResult: (result: DetectorResult | null) => void;
 };
 
+const getSafeErrorMessage = (status: number, backendErrorCode?: string): string => {
+	switch (status) {
+		case 400:
+			if (backendErrorCode === "TOKEN_MISSING") {
+				return "No pudimos validar la solicitud en este momento. Intenta nuevamente.";
+			}
+			return "No se pudo procesar la imagen. Verifica formato y tamaño.";
+		case 413:
+			return `La imagen supera el límite permitido por el servidor. Usa un archivo de hasta ${MAX_UPLOAD_MB}MB.`;
+		case 429:
+			return "Demasiadas solicitudes. Espera unos segundos antes de reintentar.";
+		case 401:
+		case 403:
+			return "No se pudo validar la verificación anti-bot. Intenta de nuevo.";
+		default:
+			if (status >= 500) {
+				return "El servicio no está disponible por ahora. Intenta más tarde.";
+			}
+			return "No se pudo analizar la imagen.";
+	}
+};
+
 export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const turnstileContainerRef = useRef<HTMLDivElement>(null);
@@ -65,7 +87,11 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const [isVerificationModalOpen, setIsVerificationModalOpen] = useState<boolean>(false);
 	const [isVerificationLoading, setIsVerificationLoading] = useState<boolean>(false);
 	const [turnstileRetryCount, setTurnstileRetryCount] = useState<number>(0);
-	const [botSessionToken, setBotSessionToken] = useState<string>("");
+	const [botSessionToken, setBotSessionToken] = useState<string>(() =>
+		typeof window === "undefined"
+			? ""
+			: window.localStorage.getItem(BOT_SESSION_STORAGE_KEY) || "",
+	);
 	const isLocalDevHost =
 		isDev &&
 		typeof window !== "undefined" &&
@@ -90,15 +116,6 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		if (typeof window !== "undefined") {
 			window.localStorage.removeItem(BOT_SESSION_STORAGE_KEY);
 		}
-	}, []);
-
-	useEffect(() => {
-		if (typeof window === "undefined") {
-			return;
-		}
-
-		const persistedSessionToken = window.localStorage.getItem(BOT_SESSION_STORAGE_KEY) || "";
-		setBotSessionToken(persistedSessionToken);
 	}, []);
 
 	const resetTurnstileWidgetSafely = useCallback(() => {
@@ -456,30 +473,6 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		setPendingFile(null);
 		setTurnstileRetryCount(0);
 		removeTurnstileWidgetSafely();
-	};
-
-	const getSafeErrorMessage = (status: number, backendErrorCode?: string): string => {
-		switch (status) {
-			case 400:
-				if (backendErrorCode === "TOKEN_MISSING") {
-					return "No pudimos validar la solicitud en este momento. Intenta nuevamente.";
-				}
-
-				return "No se pudo procesar la imagen. Verifica formato y tamaño.";
-			case 413:
-				return `La imagen supera el límite permitido por el servidor. Usa un archivo de hasta ${MAX_UPLOAD_MB}MB.`;
-			case 429:
-				return "Demasiadas solicitudes. Espera unos segundos antes de reintentar.";
-			case 401:
-			case 403:
-				return "No se pudo validar la verificación anti-bot. Intenta de nuevo.";
-			default:
-				if (status >= 500) {
-					return "El servicio no está disponible por ahora. Intenta más tarde.";
-				}
-
-				return "No se pudo analizar la imagen.";
-		}
 	};
 
 	return (
