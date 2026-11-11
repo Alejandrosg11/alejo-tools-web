@@ -30,6 +30,12 @@ Next.js generates the managed instructions in `AGENTS.md` during development;
 the version-specific guides they reference are bundled under
 `node_modules/next/dist/docs/`.
 
+DEP-03 refreshes compatible ESLint and lint transitives while preserving Next.js
+16.4.6 and React 19.2.3. The full audit still reports development-only advisories
+through typescript-eslint's minimatch range; the audit excluding development
+packages is checked separately. Out-of-range overrides and the migration from
+EOL ESLint 9 are deferred and documented in the workspace audit.
+
 ## Local development
 
 First, run the development server:
