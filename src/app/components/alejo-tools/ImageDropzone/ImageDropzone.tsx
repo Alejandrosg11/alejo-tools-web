@@ -448,6 +448,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 		setErrorMessage("");
 		setRateLimit(null);
+		onResult(null);
 
 		if (previewUrl) {
 			URL.revokeObjectURL(previewUrl);
