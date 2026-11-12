@@ -8,6 +8,7 @@ import TurnstileVerificationModal from "../../TurnstileVerificationModal/Turnsti
 import { FaCloudUploadAlt } from "react-icons/fa";
 import styles from "./ImageDropzone.module.scss";
 import { DetectorApiResponse, DetectorResult } from "../types";
+import { formatWait, readRateLimit, type RateLimit } from "./rate-limit";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_UPLOAD_MB = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || 8);
@@ -78,11 +79,13 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const turnstileContainerRef = useRef<HTMLDivElement>(null);
 	const turnstileWidgetIdRef = useRef<string | null>(null);
+	const lastSuccessful = useRef<{ file: File; result: DetectorResult } | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
 	const [isTurnstileScriptLoaded, setIsTurnstileScriptLoaded] = useState<boolean>(false);
 	const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+	const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [isVerificationModalOpen, setIsVerificationModalOpen] = useState<boolean>(false);
 	const [isVerificationLoading, setIsVerificationLoading] = useState<boolean>(false);
@@ -100,7 +103,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		isLocalDevHost && !USE_TURNSTILE_TEST_KEY_IN_DEV && BYPASS_TURNSTILE_IN_LOCAL_DEV;
 
 	const isBotProtectionEnabled = Boolean(TURNSTILE_SITE_KEY) && !shouldBypassTurnstileInLocalDev;
-	const canUploadImage = !isAnalyzing;
+	const canUploadImage = !isAnalyzing && cooldownSeconds === 0;
 
 	const saveBotSessionToken = useCallback((token: string) => {
 		setBotSessionToken(token);
@@ -175,7 +178,6 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		try {
 			setIsAnalyzing(true);
 			setErrorMessage("");
-			onResult(null);
 
 			if (isBotProtectionEnabled && !verificationToken && !botSessionToken) {
 				return;
@@ -208,25 +210,33 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 
 			if (!response.ok) {
 				let backendErrorCode = "";
+				let errorPayload: unknown = null;
 
 				try {
-					const errorPayload = (await response.clone().json()) as {
+					errorPayload = await response.clone().json();
+					const payload = errorPayload as {
 						code?: string;
 						error?: { code?: string };
 					};
-					backendErrorCode = (
-						errorPayload.code ??
-						errorPayload.error?.code ??
-						""
-					).toUpperCase();
+					const code = payload?.code ?? payload?.error?.code;
+					backendErrorCode = typeof code === "string" ? code.toUpperCase() : "";
 				} catch {
 					backendErrorCode = "";
 				}
 
 				if (response.status === 429) {
-					const retryAfter = Number(response.headers.get("retry-after") || 30);
-					setCooldownSeconds(Number.isNaN(retryAfter) ? 30 : retryAfter);
+					const limit = readRateLimit(errorPayload, response.headers);
+					setRateLimit(limit);
+					setCooldownSeconds(limit.retryAt === null ? 0 : Math.max(0, Math.ceil((limit.retryAt - Date.now()) / 1000)));
+					// Keep the previous score paired with its own image, not the new
+					// file the server refused to analyze. Never retry it automatically.
+					if (lastSuccessful.current) {
+						setPreviewUrl(URL.createObjectURL(lastSuccessful.current.file));
+						onResult(lastSuccessful.current.result);
+					}
+					return;
 				}
+				onResult(null);
 
 				if (
 					(backendErrorCode === "TOKEN_MISSING" || backendErrorCode === "TOKEN_INVALID") &&
@@ -248,14 +258,16 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			}
 
 			const data = (await response.json()) as DetectorApiResponse;
-			onResult({
+			const result: DetectorResult = {
 				percentage: data.result.percentage,
 				label: data.result.label,
 				message: data.result.message,
 				disclaimer:
 					data.disclaimer ??
 					"Resultado probabilístico. Úsalo como señal, no como sentencia.",
-			});
+			};
+			lastSuccessful.current = { file: selectedFile, result };
+			onResult(result);
 		} catch {
 			setErrorMessage("No se pudo conectar con el servicio de análisis. Intenta de nuevo.");
 			onResult(null);
@@ -354,23 +366,21 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	}, [isBotProtectionEnabled, isTurnstileScriptLoaded, isVerificationModalOpen, isVerificationLoading, pendingFile, removeTurnstileWidgetSafely, retryTurnstileVerification, runDetection, turnstileRetryCount]);
 
 	useEffect(() => {
-		if (cooldownSeconds <= 0) {
-			return;
-		}
-
-		const intervalId = window.setInterval(() => {
-			setCooldownSeconds((currentSeconds) => {
-				if (currentSeconds <= 1) {
-					window.clearInterval(intervalId);
-					return 0;
-				}
-
-				return currentSeconds - 1;
-			});
-		}, 1000);
-
-		return () => window.clearInterval(intervalId);
-	}, [cooldownSeconds]);
+		const retryAt = rateLimit?.retryAt;
+		if (!retryAt) return;
+		const update = () => {
+			setCooldownSeconds(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)));
+			if (Date.now() >= retryAt) window.clearInterval(intervalId);
+		};
+		const intervalId = window.setInterval(update, 1000);
+		document.addEventListener("visibilitychange", update);
+		window.addEventListener("pageshow", update);
+		return () => {
+			window.clearInterval(intervalId);
+			document.removeEventListener("visibilitychange", update);
+			window.removeEventListener("pageshow", update);
+		};
+	}, [rateLimit?.retryAt]);
 
 	useEffect(() => {
 		if (!isBotProtectionEnabled && isDev) {
@@ -406,15 +416,13 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	}, [isBotProtectionEnabled, shouldBypassTurnstileInLocalDev]);
 
 	const onSelectImage = () => {
-		if (cooldownSeconds > 0) {
-			setErrorMessage(`Espera ${cooldownSeconds}s antes de volver a intentar.`);
-			return;
-		}
+		if (!canUploadImage) return;
 
 		inputRef.current?.click();
 	};
 
 	const onImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+		if (!canUploadImage) return;
 		const selectedFile = event.target.files?.[0];
 		// Allow selecting the same file again after cancelling or a failed attempt.
 		event.target.value = "";
@@ -439,6 +447,8 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		}
 
 		setErrorMessage("");
+		setRateLimit(null);
+		onResult(null);
 
 		if (previewUrl) {
 			URL.revokeObjectURL(previewUrl);
@@ -490,6 +500,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				type="file"
 				accept="image/png, image/jpeg, image/webp"
 				onChange={onImageChange}
+				disabled={!canUploadImage}
 				className={styles.hiddenInput}
 			/>
 
@@ -511,7 +522,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 							className={styles.previewImage}
 						/>
 					</button>
-					<p className={styles.previewHint}>Toca la imagen para cambiarla</p>
+					<p className={styles.previewHint}>{cooldownSeconds > 0 ? "Espera para cambiar la imagen" : "Toca la imagen para cambiarla"}</p>
 				</>
 			) : (
 				<div className={styles.dropzoneInner}>
@@ -538,6 +549,20 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				Formatos soportados: JPG, PNG, WebP |
 				<span className={styles.maxSize}> Máximo {MAX_UPLOAD_MB}MB</span>
 			</p>
+			<section className={rateLimit ? styles.rateLimitNotice : undefined} aria-label="Disponibilidad del análisis">
+				<div role="status" aria-atomic="true">
+					{rateLimit && <>
+						<p className={styles.rateLimitTitle}>{rateLimit.retryAt === null
+							? "Intenta más tarde" : cooldownSeconds === 0
+								? "El tiempo de espera terminó" : rateLimit.kind === "daily"
+									? "Alcanzaste el límite de consultas" : "Espera un momento para continuar"}</p>
+						<p className={styles.rateLimitDescription}>{rateLimit.retryAt === null
+							? "No pudimos confirmar el tiempo de espera. Intenta más tarde."
+							: cooldownSeconds === 0 ? "Toca la imagen para seleccionar una nueva." : "Podrás analizar otra imagen en"}</p>
+					</>}
+				</div>
+				{rateLimit && cooldownSeconds > 0 && <p className={styles.rateLimitTime} role="timer" aria-live="off" aria-label="Tiempo restante">{formatWait(cooldownSeconds)}</p>}
+			</section>
 			{errorMessage && <p className={styles.errorText}>{errorMessage}</p>}
 		</section>
 	);
