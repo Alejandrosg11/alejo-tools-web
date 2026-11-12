@@ -57,6 +57,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   renderWidget.mockReset();
@@ -147,7 +148,7 @@ describe("session reuse and verification recovery", () => {
     const { user, input, file } = uploadSetup("valid-session");
     await user.upload(input, file);
     await screen.findByText(status === 429
-      ? "Demasiadas solicitudes. Espera unos segundos antes de reintentar."
+      ? "No pudimos confirmar el tiempo de espera. Intenta más tarde."
       : "El servicio no está disponible por ahora. Intenta más tarde.");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -198,5 +199,102 @@ describe("session reuse and verification recovery", () => {
         ? "El servicio no está disponible por ahora. Intenta más tarde."
         : "No se pudo conectar con el servicio de análisis. Intenta de nuevo.")).toBeTruthy();
     }
+  });
+});
+
+describe("approved rate-limit notice", () => {
+  it("keeps the result paired with its image, counts down and enables a NEW selection", async () => {
+    fetchMock
+      .mockResolvedValueOnce(success())
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ code: "RATE_LIMIT_SHORT", retryAfterMs: 2000 }),
+          { status: 429 },
+        ),
+      )
+      .mockResolvedValueOnce(success());
+    const { user, input, file, onResult } = uploadSetup("valid-session");
+    await user.upload(input, file);
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    await user.upload(
+      input,
+      new File(["second"], "second.png", { type: "image/png" }),
+    );
+    await screen.findByText("Espera un momento para continuar");
+    expect(screen.getByRole("timer").textContent).toBe("00:02");
+    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(URL.createObjectURL).toHaveBeenLastCalledWith(file);
+    const button = () =>
+      screen.getByRole("button", { name: "Cambiar imagen seleccionada" });
+    expect(button().hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.queryByText(
+        /3 solicitudes|Comprobar disponibilidad|Reintentar análisis/,
+      ),
+    ).toBeNull();
+    await screen.findByText(
+      "El tiempo de espera terminó",
+      {},
+      { timeout: 3500 },
+    );
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(button().hasAttribute("disabled")).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+    const third = new File(["third"], "third.png", { type: "image/png" });
+    await user.upload(input, third);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect((fetchMock.mock.calls[2][1]?.body as FormData).get("image")).toBe(
+      third,
+    );
+  });
+  it("uses the daily duration and refreshes time when the tab becomes visible", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: "RATE_LIMIT_DAILY", retryAfterMs: 19200000 }),
+        { status: 429 },
+      ),
+    );
+    const { user, input, file } = uploadSetup("valid-session");
+    await user.upload(input, file);
+    await screen.findByText("Alcanzaste el límite de consultas");
+    expect(screen.getByRole("timer").textContent).toBe("5 h 20 min 00 s");
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + 19200001);
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getByText("El tiempo de espera terminó")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("reads the named header even if the error body is not JSON", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("not JSON", {
+        status: 429,
+        headers: { "Retry-After-short": "60" },
+      }),
+    );
+    const { user, input, file } = uploadSetup("valid-session");
+    await user.upload(input, file);
+    await screen.findByText("Espera un momento para continuar");
+    expect(screen.getByRole("timer").textContent).toBe("01:00");
+  });
+  it("does not invent a lock or check button when time is missing", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 429 }));
+    const { user, input, file } = uploadSetup("valid-session");
+    await user.upload(input, file);
+    await screen.findByText(
+      "No pudimos confirmar el tiempo de espera. Intenta más tarde.",
+    );
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Comprobar disponibilidad" }),
+    ).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Cambiar imagen seleccionada" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
