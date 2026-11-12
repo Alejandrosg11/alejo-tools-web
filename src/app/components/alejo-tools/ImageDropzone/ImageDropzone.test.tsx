@@ -203,6 +203,50 @@ describe("session reuse and verification recovery", () => {
 });
 
 describe("approved rate-limit notice", () => {
+  it("restores both the successful image and result after verification followed by 429", async () => {
+    fetchMock
+      .mockResolvedValueOnce(success())
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: "TOKEN_INVALID" }), { status: 403 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: "RATE_LIMIT_SHORT", retryAfterMs: 60000 }), { status: 429 }));
+    const { user, input, file, onResult } = uploadSetup("valid-session");
+    await user.upload(input, file);
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    const successfulResult = onResult.mock.calls[0][0];
+    const second = new File(["second"], "second.png", { type: "image/png" });
+    await user.upload(input, second);
+    await screen.findByRole("dialog", { name: "Verifica que no eres un bot" });
+    expect(onResult).toHaveBeenLastCalledWith(null);
+    await act(async () => completeChallenge("renewed-challenge"));
+    await screen.findByText("Espera un momento para continuar");
+    expect(onResult).toHaveBeenCalledTimes(3);
+    expect(onResult).toHaveBeenLastCalledWith(successfulResult);
+    expect(URL.createObjectURL).toHaveBeenLastCalledWith(file);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const retry = fetchMock.mock.calls[2][1]!;
+    expect((retry.body as FormData).get("image")).toBe(second);
+    expect((retry.body as FormData).get("turnstileToken")).toBe("renewed-challenge");
+    expect(retry.headers).toEqual({});
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it.each([null, 60000])("updates the existing live region for 429 (retryAfterMs: %s)", async (retryAfterMs) => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ code: "RATE_LIMIT_SHORT", retryAfterMs }), { status: 429 }));
+    const { user, input, file } = uploadSetup("valid-session");
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("");
+    await user.upload(input, file);
+    await screen.findByText(retryAfterMs === null ? "Intenta más tarde" : "Espera un momento para continuar");
+    expect(screen.getByRole("status")).toBe(status);
+    expect(status.getAttribute("aria-atomic")).toBe("true");
+    if (retryAfterMs !== null) {
+      const timer = screen.getByRole("timer");
+      expect(status.contains(timer)).toBe(false);
+      expect(timer.getAttribute("aria-live")).toBe("off");
+    } else {
+      expect(screen.queryByRole("timer")).toBeNull();
+    }
+  });
+
   it("keeps the result paired with its image, counts down and enables a NEW selection", async () => {
     fetchMock
       .mockResolvedValueOnce(success())
@@ -222,7 +266,8 @@ describe("approved rate-limit notice", () => {
     );
     await screen.findByText("Espera un momento para continuar");
     expect(screen.getByRole("timer").textContent).toBe("00:02");
-    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(onResult).toHaveBeenCalledTimes(2);
+    expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining(result));
     expect(URL.createObjectURL).toHaveBeenLastCalledWith(file);
     const button = () =>
       screen.getByRole("button", { name: "Cambiar imagen seleccionada" });

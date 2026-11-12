@@ -79,7 +79,7 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const turnstileContainerRef = useRef<HTMLDivElement>(null);
 	const turnstileWidgetIdRef = useRef<string | null>(null);
-	const lastSuccessfulFile = useRef<File | null>(null);
+	const lastSuccessful = useRef<{ file: File; result: DetectorResult } | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -230,7 +230,10 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 					setCooldownSeconds(limit.retryAt === null ? 0 : Math.max(0, Math.ceil((limit.retryAt - Date.now()) / 1000)));
 					// Keep the previous score paired with its own image, not the new
 					// file the server refused to analyze. Never retry it automatically.
-					if (lastSuccessfulFile.current) setPreviewUrl(URL.createObjectURL(lastSuccessfulFile.current));
+					if (lastSuccessful.current) {
+						setPreviewUrl(URL.createObjectURL(lastSuccessful.current.file));
+						onResult(lastSuccessful.current.result);
+					}
 					return;
 				}
 				onResult(null);
@@ -255,15 +258,16 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 			}
 
 			const data = (await response.json()) as DetectorApiResponse;
-			lastSuccessfulFile.current = selectedFile;
-			onResult({
+			const result: DetectorResult = {
 				percentage: data.result.percentage,
 				label: data.result.label,
 				message: data.result.message,
 				disclaimer:
 					data.disclaimer ??
 					"Resultado probabilístico. Úsalo como señal, no como sentencia.",
-			});
+			};
+			lastSuccessful.current = { file: selectedFile, result };
+			onResult(result);
 		} catch {
 			setErrorMessage("No se pudo conectar con el servicio de análisis. Intenta de nuevo.");
 			onResult(null);
@@ -544,9 +548,9 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 				Formatos soportados: JPG, PNG, WebP |
 				<span className={styles.maxSize}> Máximo {MAX_UPLOAD_MB}MB</span>
 			</p>
-			{rateLimit && (
-				<section className={styles.rateLimitNotice} aria-label="Disponibilidad del análisis">
-					<div role="status" aria-atomic="true">
+			<section className={rateLimit ? styles.rateLimitNotice : undefined} aria-label="Disponibilidad del análisis">
+				<div role="status" aria-atomic="true">
+					{rateLimit && <>
 						<p className={styles.rateLimitTitle}>{rateLimit.retryAt === null
 							? "Intenta más tarde" : cooldownSeconds === 0
 								? "El tiempo de espera terminó" : rateLimit.kind === "daily"
@@ -554,10 +558,10 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 						<p className={styles.rateLimitDescription}>{rateLimit.retryAt === null
 							? "No pudimos confirmar el tiempo de espera. Intenta más tarde."
 							: cooldownSeconds === 0 ? "Toca la imagen para seleccionar una nueva." : "Podrás analizar otra imagen en"}</p>
-					</div>
-					{cooldownSeconds > 0 && <p className={styles.rateLimitTime} role="timer" aria-live="off" aria-label="Tiempo restante">{formatWait(cooldownSeconds)}</p>}
-				</section>
-			)}
+					</>}
+				</div>
+				{rateLimit && cooldownSeconds > 0 && <p className={styles.rateLimitTime} role="timer" aria-live="off" aria-label="Tiempo restante">{formatWait(cooldownSeconds)}</p>}
+			</section>
 			{errorMessage && <p className={styles.errorText}>{errorMessage}</p>}
 		</section>
 	);
