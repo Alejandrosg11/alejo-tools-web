@@ -127,11 +127,13 @@ describe("image drag and drop", () => {
     expect(screen.queryByText("Suelta la imagen para cambiarla")).toBeNull();
   });
 
-  it("ignores dragged text and links", () => {
+  it.each([["text/plain"], ["text/uri-list"], ["text/plain", "text/uri-list"]])("ignores non-file drag data (%j) and prevents browser navigation", (...types) => {
     uploadSetup("valid-session");
-    const transfer = { types: ["text/plain", "text/uri-list"], files: [] };
+    const transfer = { types, files: [], dropEffect: "copy" };
     fireEvent.dragEnter(dropzone(), { dataTransfer: transfer });
-    fireEvent.drop(dropzone(), { dataTransfer: transfer });
+    expect(fireEvent.dragOver(dropzone(), { dataTransfer: transfer })).toBe(false);
+    expect(transfer.dropEffect).toBe("none");
+    expect(fireEvent.drop(dropzone(), { dataTransfer: transfer })).toBe(false);
     expect(screen.getByText("Arrastra una imagen aquí")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(URL.createObjectURL).not.toHaveBeenCalled();

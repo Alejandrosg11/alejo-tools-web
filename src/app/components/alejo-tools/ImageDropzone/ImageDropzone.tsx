@@ -491,9 +491,8 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	};
 
 	const onDragOver = (event: DragEvent<HTMLElement>) => {
-		if (!event.dataTransfer.types.includes("Files")) return;
 		event.preventDefault();
-		event.dataTransfer.dropEffect = canUploadImage ? "copy" : "none";
+		event.dataTransfer.dropEffect = event.dataTransfer.types.includes("Files") && canUploadImage ? "copy" : "none";
 	};
 
 	const onDragLeave = (event: DragEvent<HTMLElement>) => {
@@ -504,10 +503,10 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	};
 
 	const onDrop = (event: DragEvent<HTMLElement>) => {
-		if (!event.dataTransfer.types.includes("Files") && event.dataTransfer.files.length === 0) return;
 		event.preventDefault();
 		dragDepth.current = 0;
 		setIsDragging(false);
+		if (!event.dataTransfer.types.includes("Files") && event.dataTransfer.files.length === 0) return;
 		acceptFiles(Array.from(event.dataTransfer.files));
 	};
 
