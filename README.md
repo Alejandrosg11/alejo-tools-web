@@ -85,6 +85,22 @@ aviso tras recargar ni disponibilidad de una cuota personal.
 `npm test` cubre ambos límites, recuperación sin reenvío, cabeceras anteriores,
 tiempo desconocido y la asociación entre imagen y resultado, sin proveedores reales.
 
+## Arrastrar y soltar imágenes (P1-03)
+
+La zona de subida acepta una sola imagen JPG, PNG o WebP, tanto por selección
+como por arrastre. Ambos mecanismos comparten la validación de tipo y tamaño
+(`NEXT_PUBLIC_MAX_UPLOAD_MB`, 8 MB por defecto), la vista previa y el flujo de
+sesión/Turnstile. También se puede soltar otra imagen sobre la vista previa.
+Soltar varios archivos muestra un aviso y no inicia análisis.
+
+El borde y el texto indican dónde soltar el archivo. El botón de selección
+permanece disponible para teclado y dispositivos táctiles. Durante la verificación,
+el análisis o una espera por límites no se acepta otro archivo. No hay reenvíos
+automáticos al terminar la espera.
+
+Las regresiones de componente simulan arrastre, proveedores y red; el arrastre
+nativo y la presentación visual requieren además comprobación en navegador.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

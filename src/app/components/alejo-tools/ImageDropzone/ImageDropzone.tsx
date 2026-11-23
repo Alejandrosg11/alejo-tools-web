@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Script from "next/script";
 import YellowButton from "../../YellowButton/YellowButton";
@@ -77,6 +77,8 @@ const getSafeErrorMessage = (status: number, backendErrorCode?: string): string 
 
 export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
+	const dragDepth = useRef(0);
+	const [isDragging, setIsDragging] = useState(false);
 	const turnstileContainerRef = useRef<HTMLDivElement>(null);
 	const turnstileWidgetIdRef = useRef<string | null>(null);
 	const lastSuccessful = useRef<{ file: File; result: DetectorResult } | null>(null);
@@ -103,7 +105,8 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		isLocalDevHost && !USE_TURNSTILE_TEST_KEY_IN_DEV && BYPASS_TURNSTILE_IN_LOCAL_DEV;
 
 	const isBotProtectionEnabled = Boolean(TURNSTILE_SITE_KEY) && !shouldBypassTurnstileInLocalDev;
-	const canUploadImage = !isAnalyzing && cooldownSeconds === 0;
+	const canUploadImage = !isAnalyzing && !isVerificationModalOpen && cooldownSeconds === 0;
+	const showDropHint = isDragging && canUploadImage;
 
 	const saveBotSessionToken = useCallback((token: string) => {
 		setBotSessionToken(token);
@@ -422,10 +425,19 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	};
 
 	const onImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-		if (!canUploadImage) return;
-		const selectedFile = event.target.files?.[0];
+		const files = Array.from(event.target.files ?? []);
 		// Allow selecting the same file again after cancelling or a failed attempt.
 		event.target.value = "";
+		acceptFiles(files);
+	};
+
+	const acceptFiles = (files: File[]) => {
+		if (!canUploadImage) return;
+		if (files.length > 1) {
+			setErrorMessage("Selecciona una sola imagen a la vez.");
+			return;
+		}
+		const selectedFile = files[0];
 
 		if (!selectedFile) {
 			setErrorMessage("");
@@ -435,14 +447,12 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		if (!ALLOWED_IMAGE_TYPES.includes(selectedFile.type)) {
 			setErrorMessage("Solo se permiten imágenes JPG, PNG o WebP.");
 			onResult(null);
-			event.target.value = "";
 			return;
 		}
 
 		if (selectedFile.size > MAX_UPLOAD_BYTES) {
 			setErrorMessage(`La imagen supera el máximo permitido de ${MAX_UPLOAD_MB}MB.`);
 			onResult(null);
-			event.target.value = "";
 			return;
 		}
 
@@ -473,6 +483,33 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 		void runDetection(selectedFile);
 	};
 
+	const onDragEnter = (event: DragEvent<HTMLElement>) => {
+		if (!event.dataTransfer.types.includes("Files")) return;
+		event.preventDefault();
+		dragDepth.current += 1;
+		if (canUploadImage) setIsDragging(true);
+	};
+
+	const onDragOver = (event: DragEvent<HTMLElement>) => {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = event.dataTransfer.types.includes("Files") && canUploadImage ? "copy" : "none";
+	};
+
+	const onDragLeave = (event: DragEvent<HTMLElement>) => {
+		if (!event.dataTransfer.types.includes("Files")) return;
+		event.preventDefault();
+		dragDepth.current = Math.max(0, dragDepth.current - 1);
+		if (dragDepth.current === 0) setIsDragging(false);
+	};
+
+	const onDrop = (event: DragEvent<HTMLElement>) => {
+		event.preventDefault();
+		dragDepth.current = 0;
+		setIsDragging(false);
+		if (!event.dataTransfer.types.includes("Files") && event.dataTransfer.files.length === 0) return;
+		acceptFiles(Array.from(event.dataTransfer.files));
+	};
+
 	const closeVerificationModal = () => {
 		if (isVerificationLoading) {
 			return;
@@ -486,7 +523,14 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 	};
 
 	return (
-		<section className={styles.dropzoneWrapper}>
+		<section
+			className={`${styles.dropzoneWrapper}${showDropHint ? ` ${styles.dragActive}` : ""}`}
+			aria-label="Subir imagen para analizar"
+			onDragEnter={onDragEnter}
+			onDragOver={onDragOver}
+			onDragLeave={onDragLeave}
+			onDrop={onDrop}
+		>
 			{isBotProtectionEnabled && (
 				<Script
 					src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
@@ -518,16 +562,17 @@ export default function ImageDropzone({ onResult }: ImageDropzoneProps) {
 							alt="Imagen seleccionada"
 							fill
 							unoptimized
+							draggable={false}
 							sizes="(max-width: 767px) 100vw, 600px"
 							className={styles.previewImage}
 						/>
 					</button>
-					<p className={styles.previewHint}>{cooldownSeconds > 0 ? "Espera para cambiar la imagen" : "Toca la imagen para cambiarla"}</p>
+					<p className={styles.previewHint}>{showDropHint ? "Suelta la imagen para cambiarla" : cooldownSeconds > 0 ? "Espera para cambiar la imagen" : "Toca la imagen o arrastra otra para cambiarla"}</p>
 				</>
 			) : (
 				<div className={styles.dropzoneInner}>
 					<FaCloudUploadAlt className={styles.uploadIcon} />
-					<p className={styles.dropText}>Arrastra una imagen aqui</p>
+					<p className={styles.dropText}>{showDropHint ? "Suelta la imagen aquí" : "Arrastra una imagen aquí"}</p>
 					<YellowButton
 						Clickable={canUploadImage}
 						text={isAnalyzing ? "Analizando..." : "Selecciona una imagen"}
