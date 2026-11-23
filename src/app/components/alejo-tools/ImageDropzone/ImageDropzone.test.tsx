@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEffect, type ComponentProps } from "react";
@@ -61,6 +61,142 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   renderWidget.mockReset();
+});
+
+const dropzone = () => screen.getByRole("region", { name: "Subir imagen para analizar" });
+const fileTransfer = (files: File[] = []) => ({ files, types: ["Files"], dropEffect: "none" });
+
+describe("image drag and drop", () => {
+  it.each(["image/jpeg", "image/png", "image/webp"])("analyzes a dropped %s using the saved session", async (type) => {
+    fetchMock.mockResolvedValue(success());
+    const { onResult } = uploadSetup("valid-session");
+    const file = new File(["image"], "drawing", { type });
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+    await waitFor(() => expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining(result)));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0][1]?.body as FormData).get("image")).toBe(file);
+    expect(fetchMock.mock.calls[0][1]?.headers).toEqual({ [sessionHeader]: "valid-session" });
+    expect(renderWidget).not.toHaveBeenCalled();
+  });
+
+  it.each(["selection", "drop"])("rejects invalid types and oversized files through %s", (method) => {
+    const { input, onResult } = uploadSetup("valid-session");
+    const invalid = new File(["text"], "notes.txt", { type: "text/plain" });
+    const oversized = new File([new Uint8Array(8 * 1024 * 1024 + 1)], "large.png", { type: "image/png" });
+    for (const [file, message] of [
+      [invalid, "Solo se permiten imágenes JPG, PNG o WebP."],
+      [oversized, "La imagen supera el máximo permitido de 8MB."],
+    ] as const) {
+      if (method === "drop") fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+      else fireEvent.change(input, { target: { files: [file] } });
+      expect(screen.getByText(message)).toBeTruthy();
+    }
+    expect(onResult).toHaveBeenLastCalledWith(null);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("rejects multiple files and can accept a single image afterwards", async () => {
+    fetchMock.mockResolvedValue(success());
+    const { file, onResult } = uploadSetup("valid-session");
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file, file]) });
+    expect(screen.getByText("Selecciona una sola imagen a la vez.")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+    await waitFor(() => expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining(result)));
+    expect(screen.queryByText("Selecciona una sola imagen a la vez.")).toBeNull();
+  });
+
+  it("keeps the drop hint across child transitions and resets it on exit or drop", async () => {
+    fetchMock.mockResolvedValue(success());
+    const { file } = uploadSetup("valid-session");
+    const zone = dropzone();
+    const button = screen.getByRole("button", { name: "Selecciona una imagen" });
+    const transfer = fileTransfer([file]);
+    fireEvent.dragEnter(zone, { dataTransfer: transfer });
+    fireEvent.dragEnter(button, { dataTransfer: transfer });
+    fireEvent.dragLeave(button, { dataTransfer: transfer });
+    expect(screen.getByText("Suelta la imagen aquí")).toBeTruthy();
+    expect(fireEvent.dragOver(zone, { dataTransfer: transfer })).toBe(false);
+    expect(transfer.dropEffect).toBe("copy");
+    fireEvent.dragLeave(zone, { dataTransfer: transfer });
+    expect(screen.getByText("Arrastra una imagen aquí")).toBeTruthy();
+    fireEvent.dragEnter(zone, { dataTransfer: transfer });
+    expect(fireEvent.drop(zone, { dataTransfer: transfer })).toBe(false);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("Suelta la imagen para cambiarla")).toBeNull();
+  });
+
+  it("ignores dragged text and links", () => {
+    uploadSetup("valid-session");
+    const transfer = { types: ["text/plain", "text/uri-list"], files: [] };
+    fireEvent.dragEnter(dropzone(), { dataTransfer: transfer });
+    fireEvent.drop(dropzone(), { dataTransfer: transfer });
+    expect(screen.getByText("Arrastra una imagen aquí")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("keeps the pending file while verifying, then allows dropping the same file after cancellation", async () => {
+    fetchMock.mockResolvedValue(success());
+    const { user, input, file } = uploadSetup();
+    const other = new File(["other"], "other.png", { type: "image/png" });
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+    await screen.findByRole("dialog", { name: "Verifica que no eres un bot" });
+    expect(input.disabled).toBe(true);
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([other]) });
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+    await act(async () => completeChallenge("fresh-challenge"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect((fetchMock.mock.calls[0][1]?.body as FormData).get("image")).toBe(file);
+  });
+
+  it("blocks drops while analyzing and permits replacement after success", async () => {
+    let finish!: (response: Response) => void;
+    fetchMock.mockReturnValueOnce(new Promise<Response>((resolve) => { finish = resolve; }))
+      .mockResolvedValueOnce(success());
+    const { file, onResult } = uploadSetup("valid-session");
+    const other = new File(["other"], "other.png", { type: "image/png" });
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+    const transfer = fileTransfer([other]);
+    fireEvent.dragEnter(dropzone(), { dataTransfer: transfer });
+    fireEvent.dragOver(dropzone(), { dataTransfer: transfer });
+    expect(transfer.dropEffect).toBe("none");
+    fireEvent.drop(dropzone(), { dataTransfer: transfer });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(URL.createObjectURL).toHaveBeenLastCalledWith(file);
+    await act(async () => finish(success()));
+    await waitFor(() => expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining(result)));
+    fireEvent.dragEnter(dropzone(), { dataTransfer: transfer });
+    expect(screen.getByText("Suelta la imagen para cambiarla")).toBeTruthy();
+    fireEvent.drop(dropzone(), { dataTransfer: transfer });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect((fetchMock.mock.calls[1][1]?.body as FormData).get("image")).toBe(other);
+  });
+
+  it("preserves the successful image and result during cooldown and accepts a new drop after expiry", async () => {
+    fetchMock.mockResolvedValueOnce(success())
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: "RATE_LIMIT_SHORT", retryAfterMs: 60000 }), { status: 429 }))
+      .mockResolvedValueOnce(success());
+    const { file, onResult } = uploadSetup("valid-session");
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([file]) });
+    await waitFor(() => expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining(result)));
+    const other = new File(["other"], "other.png", { type: "image/png" });
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([other]) });
+    await screen.findByText("Espera un momento para continuar");
+    expect(URL.createObjectURL).toHaveBeenLastCalledWith(file);
+    expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining(result));
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([other]) });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(URL.createObjectURL).toHaveBeenLastCalledWith(file);
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 60001);
+    await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+    fireEvent.drop(dropzone(), { dataTransfer: fileTransfer([other]) });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect((fetchMock.mock.calls[2][1]?.body as FormData).get("image")).toBe(other);
+  });
 });
 
 describe("session reuse and verification recovery", () => {
