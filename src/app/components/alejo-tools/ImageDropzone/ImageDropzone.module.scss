@@ -12,6 +12,18 @@
   display: none;
 }
 
+.dragActive {
+  border-color: $color-yellow;
+
+  .dropzoneInner, .imagePreview {
+    border-color: $color-yellow;
+  }
+
+  .dropText, .uploadIcon, .previewHint {
+    color: $color-yellow;
+  }
+}
+
 .dropzoneInner {
   border: 3px dashed $color-border;
   border-radius: 12px;
