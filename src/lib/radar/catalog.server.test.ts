@@ -12,14 +12,17 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 it("comparte la lectura en curso y distingue el vacío válido de un fallo", async () => {
   vi.stubEnv("RADAR_JSON_URL", "https://example.org/radar.json");
+  vi.useFakeTimers({ toFake: ["Date"] });
   vi.spyOn(console, "error").mockImplementation(() => {});
   const fetchCatalog = vi.fn()
     .mockImplementationOnce(async () => Response.json({ version: 1, convocatorias: [] }))
-    .mockImplementationOnce(async () => new Response(null, { status: 503 }));
+    .mockImplementationOnce(async () => new Response(null, { status: 503 }))
+    .mockImplementationOnce(async () => Response.json({ version: 1, convocatorias: [] }));
   vi.stubGlobal("fetch", fetchCatalog);
 
   const visit = () => loadRadarCatalog("2026-11-26");
@@ -28,4 +31,13 @@ it("comparte la lectura en curso y distingue el vacío válido de un fallo", asy
 
   expect(await Promise.all([visit(), visit(), visit()])).toEqual([null, null, null]);
   expect(fetchCatalog).toHaveBeenCalledTimes(2);
+
+  vi.advanceTimersByTime(29_999);
+  expect(await visit()).toBeNull();
+  expect(await visit()).toBeNull();
+  expect(fetchCatalog).toHaveBeenCalledTimes(2);
+
+  vi.advanceTimersByTime(1);
+  expect(await visit()).toEqual([]);
+  expect(fetchCatalog).toHaveBeenCalledTimes(3);
 });

@@ -3,6 +3,7 @@ import { parseRadarCatalog, radarHttpsUrl } from "./catalog";
 
 const maxBytes = 256 * 1024;
 const revalidateSeconds = 300;
+const failureCooldownMs = 30_000;
 
 async function fetchCatalog(url: string) {
   try {
@@ -41,12 +42,23 @@ async function fetchCatalog(url: string) {
 }
 
 const activeReads = new Map<string, ReturnType<typeof fetchCatalog>>();
+const retryAfter = new Map<string, number>();
 
 function refreshCatalog(url: string) {
   const activeRead = activeReads.get(url);
   if (activeRead) return activeRead;
 
-  const read = fetchCatalog(url).finally(() => activeReads.delete(url));
+  if ((retryAfter.get(url) ?? 0) > Date.now()) {
+    return Promise.reject(new Error("La lectura del catálogo está en pausa tras un fallo."));
+  }
+  retryAfter.delete(url);
+
+  const read = fetchCatalog(url)
+    .catch((error: unknown) => {
+      retryAfter.set(url, Date.now() + failureCooldownMs);
+      throw error;
+    })
+    .finally(() => activeReads.delete(url));
   activeReads.set(url, read);
   return read;
 }
