@@ -21,6 +21,7 @@ export default function Navbar() {
                 </div>
                 <div className={styles["nav-links"]}>
                     <Link href="/alejo-tools" className={isActive('/alejo-tools') ? styles.activeLink : undefined}>Alejo Tools</Link>
+                    <Link href="/radar" aria-current={isActive('/radar') ? 'page' : undefined} className={isActive('/radar') ? styles.activeLink : undefined}>Radar Creativo</Link>
                     <Link href="/privacy" className={isActive('/privacy') ? styles.activeLink : undefined}>Privacy Policy</Link>
                 </div>
             </div>
@@ -51,6 +52,7 @@ export default function Navbar() {
                 </button>
                 <div className={styles["mobile-menu"] + (isOpen ? " " + styles.open : "")}>
                     <Link href="/alejo-tools" onClick={closeMenu} className={isActive('/alejo-tools') ? styles.activeLink : undefined}>Alejo Tools</Link>
+                    <Link href="/radar" onClick={closeMenu} aria-current={isActive('/radar') ? 'page' : undefined} className={isActive('/radar') ? styles.activeLink : undefined}>Radar Creativo</Link>
                     <Link href="/privacy" onClick={closeMenu} className={isActive('/privacy') ? styles.activeLink : undefined}>Privacy Policy</Link>
                 </div>
             </div>
