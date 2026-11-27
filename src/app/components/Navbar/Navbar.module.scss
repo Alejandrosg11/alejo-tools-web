@@ -27,7 +27,10 @@
     a:active {
         color: $color-yellow-nav;
         text-decoration: none;
-        display: block;
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        min-height: 44px;
         padding: 4px 2px;
         line-height: 1.35;
         opacity: 0;

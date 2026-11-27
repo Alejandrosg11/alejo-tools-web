@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+const localDevHost = process.env.DEV_LAN_HOST?.trim();
 const isQa = ["qa", "staging"].includes(
   (process.env.NEXT_PUBLIC_APP_ENV || "").trim().toLowerCase(),
 );
@@ -20,7 +21,9 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  allowedDevOrigins: ["http://localhost:3000", "http://192.168.10.110:3000"],
+  ...(isDev && {
+    allowedDevOrigins: ["127.0.0.1", ...(localDevHost ? [localDevHost] : [])],
+  }),
   async headers() {
     return [
       {

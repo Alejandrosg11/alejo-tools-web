@@ -3,9 +3,9 @@ import styles from "./HeroSection.module.scss";
 export default function HeroSection() {
   return (
     <section className={styles.heroSection}>
-      <h2 className={styles.title}>
+      <h1 className={styles.title}>
         Detector <span className={styles.accent}>IA</span> para imágenes
-      </h2>
+      </h1>
       <p className={styles.description}>
         Analiza una imagen y obtén una estimación probabilística de contenido generado por IA.
       </p>

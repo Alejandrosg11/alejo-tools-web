@@ -69,3 +69,12 @@
 		margin-left: 0;
 	}
 }
+
+.supportCard.inline {
+	position: static;
+	inset: auto;
+	z-index: auto;
+	width: 100%;
+	max-width: none;
+	margin: 0;
+}

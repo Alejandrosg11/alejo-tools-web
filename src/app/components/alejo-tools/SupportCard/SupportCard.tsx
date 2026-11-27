@@ -6,11 +6,12 @@ import styles from "./SupportCard.module.scss";
 
 type SupportCardProps = {
 	onInviteCoffee?: () => void;
+	inline?: boolean;
 };
 
 const KOFI_URL = (process.env.NEXT_PUBLIC_KOFI_URL || "https://ko-fi.com/alejo89_draws").trim();
 
-export default function SupportCard({ onInviteCoffee }: SupportCardProps) {
+export default function SupportCard({ onInviteCoffee, inline = false }: SupportCardProps) {
 	const handleInviteCoffee = () => {
 		if (onInviteCoffee) {
 			onInviteCoffee();
@@ -21,7 +22,7 @@ export default function SupportCard({ onInviteCoffee }: SupportCardProps) {
 	};
 
 	return (
-		<aside className={styles.supportCard} aria-label="Apoya Alejo Tools en Ko-fi">
+		<aside className={inline ? `${styles.supportCard} ${styles.inline}` : styles.supportCard} aria-label="Apoya Alejo Tools en Ko-fi">
 			<div className={styles.supportCardHeader}>
 				<p className={styles.supportCardTitle}>
 					Apoya Alejo Tools

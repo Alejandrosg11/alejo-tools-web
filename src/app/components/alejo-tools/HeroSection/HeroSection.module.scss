@@ -1,18 +1,13 @@
 @use "../../../styles/variables" as *;
+@use "../../../styles/page-layout" as layout;
 
 .heroSection {
-  margin-top: 32px;
-  margin-bottom: 32px;
-  padding: 0 16px;
+  margin-block: layout.$heading-spacing;
+  padding-inline: layout.$content-inset;
 }
 
 .title {
-  color: $color-white;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-  margin-bottom: 12px;
+  @include layout.page-title;
 }
 
 .accent {
@@ -21,36 +16,20 @@
 }
 
 .description {
+  @include layout.intro-description;
   color: $color-gray;
-  font-size: 1.1rem;
-  font-weight: 500;
   line-height: 1.5;
   letter-spacing: 0.005em;
-  margin-bottom: 8px;
 }
 
 .subDescription {
+  @include layout.intro-note;
   color: $color-gray;
-  font-size: 1rem;
-  font-weight: 400;
   line-height: 1.55;
   letter-spacing: 0.003em;
-  margin-bottom: 0;
 }
 
 .bold {
   color: $color-yellow;
   font-weight: 700;
-}
-
-@media (max-width: 767px) {
-  .title {
-    font-size: 1.65rem;
-  }
-  .description {
-    font-size: .9rem;
-  }
-  .subDescription {
-    font-size: .9rem;
-  }
 }

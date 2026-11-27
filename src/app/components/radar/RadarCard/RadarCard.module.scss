@@ -1,0 +1,95 @@
+@use "../../../styles/variables" as *;
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  border: 1px solid $color-border;
+  border-radius: 0.75rem;
+  background: $color-bg-secondary;
+  color: $color-white;
+  text-decoration: none;
+}
+
+.card:focus-visible {
+  outline: 2px solid $color-yellow;
+  outline-offset: 4px;
+}
+
+.poster {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: $color-border;
+  color: $color-gray;
+  font-size: 1.25rem;
+  font-weight: 700;
+
+  span { padding: 1rem; text-align: center; }
+  img { object-fit: cover; }
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 17rem;
+  padding: 1.25rem;
+  line-height: 1.5;
+
+  h2, p, dl, ul { margin: 0; }
+  h2 { line-height: 1.2; font-size: 1.5rem; }
+}
+
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0;
+  font-size: 0.875rem;
+  list-style: none;
+
+  li {
+    max-width: 100%;
+    padding: 0.125rem 0.625rem;
+    border-radius: 0.5rem;
+    background: $color-gray-dark;
+  }
+}
+
+.details {
+  dt, dd { display: inline; margin: 0; }
+  dt { font-weight: 700; }
+  dt::after { content: ": "; }
+  dd { color: $color-gray; }
+}
+
+.red { color: #ff9696; font-weight: 700; }
+.yellow { color: $color-yellow; font-weight: 700; }
+.green { color: #a2e7a4; font-weight: 700; }
+
+.status {
+  font-size: 0.875rem;
+
+  > span { display: block; }
+}
+
+@media (min-width: 768px) {
+  .status { min-height: var(--radar-status-height, 0px); }
+}
+
+.action {
+  margin-top: auto;
+  text-align: center;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .card { transition: transform 180ms ease; }
+  .card:hover { z-index: 1; transform: scale(1.025); }
+}
