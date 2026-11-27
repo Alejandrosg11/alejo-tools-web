@@ -14,6 +14,8 @@ export default function RadarGallery({ items, initialDate }: {
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [pending, startTransition] = useTransition();
   const gridRef = useRef<HTMLUListElement>(null);
+  const emptyRef = useRef<HTMLParagraphElement>(null);
+  const focusAfterRetry = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,23 +45,42 @@ export default function RadarGallery({ items, initialDate }: {
     return () => observer.disconnect();
   }, [items, currentDate, initialDate, pending]);
 
-  if (pending) return <RadarSkeleton />;
+  useLayoutEffect(() => {
+    if (!items || pending || !focusAfterRetry.current) return;
+    focusAfterRetry.current = false;
+    (gridRef.current ?? emptyRef.current)?.focus();
+  }, [items, pending]);
+
   if (!items) {
     return (
-      <div className={styles.message}>
-        <p role="status">No pudimos cargar las convocatorias en este momento.</p>
-        <button type="button" onClick={() => startTransition(() => router.refresh())}>Reintentar</button>
-      </div>
+      <>
+        <div className={styles.message}>
+          <p role="status">{pending ? "Volviendo a cargar las convocatorias…" : "No pudimos cargar las convocatorias en este momento."}</p>
+          <button
+            type="button"
+            aria-disabled={pending}
+            onBlur={() => { focusAfterRetry.current = false; }}
+            onClick={(event) => {
+              if (pending) return;
+              focusAfterRetry.current = document.activeElement === event.currentTarget;
+              startTransition(() => router.refresh());
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+        {pending && <RadarSkeleton />}
+      </>
     );
   }
 
   const visible = listRadarOpportunities(items, currentDate > initialDate ? currentDate : initialDate);
   if (!visible.length) {
-    return <p className={styles.message} role="status">Por ahora no hay convocatorias disponibles. Vuelve pronto para ver nuevas oportunidades.</p>;
+    return <p ref={emptyRef} tabIndex={-1} className={styles.message} role="status">Por ahora no hay convocatorias disponibles. Vuelve pronto para ver nuevas oportunidades.</p>;
   }
 
   return (
-    <ul ref={gridRef} className={styles.grid} aria-label="Convocatorias">
+    <ul ref={gridRef} tabIndex={-1} className={styles.grid} aria-label="Convocatorias">
       {visible.map((item) => <li key={item.id}><RadarCard item={item} /></li>)}
     </ul>
   );

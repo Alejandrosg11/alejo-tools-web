@@ -40,7 +40,18 @@ async function fetchCatalog(url: string) {
   }
 }
 
-const cachedCatalog = unstable_cache(fetchCatalog, ["radar-catalog-v1"], {
+const activeReads = new Map<string, ReturnType<typeof fetchCatalog>>();
+
+function refreshCatalog(url: string) {
+  const activeRead = activeReads.get(url);
+  if (activeRead) return activeRead;
+
+  const read = fetchCatalog(url).finally(() => activeReads.delete(url));
+  activeReads.set(url, read);
+  return read;
+}
+
+const cachedCatalog = unstable_cache(refreshCatalog, ["radar-catalog-v1"], {
   revalidate: revalidateSeconds,
   tags: ["radar-catalog"],
 });
@@ -51,7 +62,7 @@ export async function loadRadarCatalog(today: string) {
     const catalog = await cachedCatalog(url);
     const hasVisible = catalog.items.some((item) => item.visible && item.cierre >= today);
     if (!hasVisible && Date.now() - catalog.fetchedAt >= revalidateSeconds * 1000) {
-      return (await fetchCatalog(url)).items;
+      return (await refreshCatalog(url)).items;
     }
     return catalog.items;
   } catch {
