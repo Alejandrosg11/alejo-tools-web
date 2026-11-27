@@ -1,0 +1,83 @@
+import { unstable_cache } from "next/cache";
+import { parseRadarCatalog, radarHttpsUrl } from "./catalog";
+
+const maxBytes = 256 * 1024;
+const revalidateSeconds = 300;
+const failureCooldownMs = 30_000;
+
+async function fetchCatalog(url: string) {
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok || !response.body) {
+      throw new Error(`Respuesta HTTP ${response.status}.`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    let size = 0;
+    let body = "";
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > maxBytes) throw new Error("El catálogo excede 256 KiB.");
+        body += decoder.decode(value, { stream: true });
+      }
+      body += decoder.decode();
+    } finally {
+      await reader.cancel().catch(() => {});
+      reader.releaseLock();
+    }
+
+    return { items: parseRadarCatalog(JSON.parse(body)), fetchedAt: Date.now() };
+  } catch (error) {
+    console.error("[radar] Falló la lectura del catálogo:", error instanceof Error ? error.message : "Error desconocido");
+    throw error;
+  }
+}
+
+const activeReads = new Map<string, ReturnType<typeof fetchCatalog>>();
+const retryAfter = new Map<string, number>();
+
+function refreshCatalog(url: string) {
+  const activeRead = activeReads.get(url);
+  if (activeRead) return activeRead;
+
+  if ((retryAfter.get(url) ?? 0) > Date.now()) {
+    return Promise.reject(new Error("La lectura del catálogo está en pausa tras un fallo."));
+  }
+  retryAfter.delete(url);
+
+  const read = fetchCatalog(url)
+    .catch((error: unknown) => {
+      retryAfter.set(url, Date.now() + failureCooldownMs);
+      throw error;
+    })
+    .finally(() => activeReads.delete(url));
+  activeReads.set(url, read);
+  return read;
+}
+
+const cachedCatalog = unstable_cache(refreshCatalog, ["radar-catalog-v1"], {
+  revalidate: revalidateSeconds,
+  tags: ["radar-catalog"],
+});
+
+export async function loadRadarCatalog(today: string) {
+  try {
+    const url = radarHttpsUrl(process.env.RADAR_JSON_URL, "RADAR_JSON_URL");
+    const catalog = await cachedCatalog(url);
+    const hasVisible = catalog.items.some((item) => item.visible && item.cierre >= today);
+    if (!hasVisible && Date.now() - catalog.fetchedAt >= revalidateSeconds * 1000) {
+      return (await refreshCatalog(url)).items;
+    }
+    return catalog.items;
+  } catch {
+    return null;
+  }
+}

@@ -1,0 +1,48 @@
+@use "./variables" as *;
+
+$content-inset: 16px;
+$heading-spacing: 32px;
+$desktop-breakpoint: 850px;
+
+@mixin container {
+  padding-bottom: 132px;
+
+  @media (min-width: $desktop-breakpoint) {
+    max-width: 1100px;
+    margin-inline: auto;
+    padding-inline: 40px;
+    padding-bottom: 24px;
+  }
+}
+
+@mixin page-title {
+  color: $color-white;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin-block: 0 12px;
+
+  @media (max-width: 767px) {
+    font-size: 1.65rem;
+  }
+}
+
+@mixin intro-paragraph($size, $weight, $bottom) {
+  font-size: $size;
+  font-weight: $weight;
+  margin-block: $size $bottom;
+
+  @media (max-width: 767px) {
+    font-size: 0.9rem;
+    margin-block-start: 0.9rem;
+  }
+}
+
+@mixin intro-description {
+  @include intro-paragraph(1.1rem, 500, 8px);
+}
+
+@mixin intro-note {
+  @include intro-paragraph(1rem, 400, 0);
+}

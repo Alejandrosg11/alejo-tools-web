@@ -1,10 +1,12 @@
+@use "../styles/page-layout" as layout;
+
 .pageShell {
 	min-height: 100vh;
 }
 
 .pageContent {
+	@include layout.container;
 	display: block;
-	padding-bottom: 132px;
 }
 
 .contentColumn {
@@ -19,16 +21,11 @@
 	gap: 14px;
 }
 
-@media (min-width: 850px) {
+@media (min-width: layout.$desktop-breakpoint) {
 	.pageContent {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) 360px;
 		gap: 20px;
-		max-width: 1100px;
-		margin: 0 auto;
-		padding-bottom: 24px;
-        padding-left: 40px;
-        padding-right: 40px;
 	}
 
 	.supportColumn {

@@ -1,0 +1,55 @@
+@use "../styles/variables" as *;
+@use "../styles/page-layout" as layout;
+
+.main {
+  @include layout.container;
+  position: relative;
+}
+
+.content {
+  --radar-column-gap: 1.25rem;
+  padding-inline: layout.$content-inset;
+  padding-top: layout.$heading-spacing;
+}
+
+.header {
+  display: grid;
+  align-items: start;
+  gap: var(--radar-column-gap);
+  margin-bottom: layout.$heading-spacing;
+}
+
+.intro {
+  h1 {
+    @include layout.page-title;
+  }
+
+  p {
+    max-width: 60ch;
+    color: $color-gray;
+    line-height: 1.5;
+  }
+
+  h1 + p {
+    @include layout.intro-description;
+  }
+
+  p + p {
+    @include layout.intro-note;
+  }
+}
+
+.accent {
+  color: $color-yellow;
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .header {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .intro {
+    grid-column: span 2;
+  }
+}
